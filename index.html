@@ -1,0 +1,2440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Business Analyst Builder (BAB)</title>
+<meta name="description" content="BAB — Build clearer BA artefacts faster: meeting prep, process mapping, acceptance criteria, NFRs, UAT readiness, jargon, templates, and examples." />
+<style>
+:root{
+--sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+--mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+--bg0:#070b12;
+--bg1:#0a1322;
+--text:#eaf0ff;
+--muted:#b7c6ea;
+--muted2:#92a4cf;
+--border: rgba(255,255,255,.11);
+--cardTop: rgba(255,255,255,.07);
+--cardBot: rgba(255,255,255,.03);
+--accent:#f0c96a;
+--accent2:#7bdff2;
+--good:#7CFFB2;
+--warn:#FFB86B;
+--bad:#ff7a7a;
+--shadow: rgba(0,0,0,.55);
+--radius: 18px;
+--radius2: 14px;
+--focus: 0 0 0 3px rgba(240,201,106,.22);
+--gap: 14px;
+--gap2: 10px;
+--maxw: 1180px;
+color-scheme: dark;
+}
+*{
+box-sizing:border-box;
+}
+html, body{
+height:100%;
+}
+body{
+margin:0;
+font-family: var(--sans);
+color: var(--text);
+overflow-x:hidden;
+background: radial-gradient(1200px 800px at 18% 10%, rgba(123,223,242,.14), transparent 62%),
+radial-gradient(900px 700px at 82% 14%, rgba(240,201,106,.16), transparent 58%),
+radial-gradient(1100px 800px at 55% 85%, rgba(120,255,178,.07), transparent 62%),
+radial-gradient(900px 700px at 50% 40%, rgba(255,255,255,.05), transparent 70%),
+linear-gradient(180deg, var(--bg0), var(--bg1) 40%, var(--bg0));
+}
+a{
+color: inherit;
+}
+.wrap{
+max-width: var(--maxw);
+margin: 0 auto;
+padding: 22px 18px 40px;
+}
+
+/* ---------- Top header / nav ---------- */
+.topbar{
+border: 1px solid var(--border);
+border-radius: 22px;
+padding: 14px 14px 14px 16px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap: 14px;
+background: radial-gradient(900px 240px at 15% 0%, rgba(123,223,242,.12), transparent 58%),
+radial-gradient(900px 240px at 85% 0%, rgba(240,201,106,.12), transparent 58%),
+linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+box-shadow: 0 18px 60px var(--shadow), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.brand{
+display:flex;
+gap: 12px;
+align-items:center;
+min-width: 240px;
+}
+.logo{
+width: 34px;
+height: 34px;
+border-radius: 12px;
+background: radial-gradient(12px 12px at 30% 30%, rgba(255,255,255,.55), rgba(255,255,255,0) 60%),
+radial-gradient(18px 18px at 72% 34%, rgba(123,223,242,.55), rgba(123,223,242,0) 70%),
+radial-gradient(22px 22px at 50% 70%, rgba(240,201,106,.62), rgba(240,201,106,0) 70%),
+linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.03));
+border: 1px solid rgba(255,255,255,.15);
+box-shadow: 0 12px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.brandText{
+line-height:1.1;
+}
+.brandTitle{
+font-weight: 750;
+letter-spacing: .2px;
+font-size: 14px;
+}
+.brandSub{
+font-size: 12px;
+color: var(--muted2);
+margin-top: 2px;
+}
+.tabs{
+display:flex;
+align-items:center;
+gap: 8px;
+flex-wrap:wrap;
+justify-content:flex-end;
+}
+.tab{
+border: 1px solid rgba(255,255,255,.10);
+background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+color: var(--muted);
+padding: 7px 11px;
+border-radius: 999px;
+cursor:pointer;
+font-size: 13px;
+user-select:none;
+transition: background .15s ease, border-color .15s ease, transform .08s ease, color .15s ease, box-shadow .15s ease;
+outline: none;
+}
+.tab:hover{
+transform: translateY(-1px);
+border-color: rgba(240,201,106,.32);
+color: var(--text);
+}
+.tab:focus-visible{
+box-shadow: var(--focus);
+}
+.tab.active{
+color: var(--text);
+border-color: rgba(240,201,106,.60);
+background: linear-gradient(180deg, rgba(240,201,106,.18), rgba(255,255,255,.04));
+box-shadow: 0 10px 26px rgba(240,201,106,.10);
+}
+
+/* ---------- Layout ---------- */
+.grid{
+margin-top: 14px;
+display:grid;
+grid-template-columns: 1.3fr .95fr;
+gap: var(--gap);
+align-items:start;
+}
+@media (max-width: 980px){
+.brand{
+min-width: unset;
+}
+.grid{
+grid-template-columns: 1fr;
+}
+.tabs{
+justify-content:flex-start;
+}
+.topbar{
+align-items:flex-start;
+flex-direction:column;
+}
+}
+
+/* ---------- Cards ---------- */
+.card{
+border: 1px solid var(--border);
+border-radius: var(--radius);
+background: radial-gradient(900px 220px at 15% 0%, rgba(123,223,242,.10), transparent 55%),
+radial-gradient(900px 220px at 85% 0%, rgba(240,201,106,.10), transparent 55%),
+linear-gradient(180deg, var(--cardTop), var(--cardBot));
+box-shadow: 0 18px 60px var(--shadow), inset 0 1px 0 rgba(255,255,255,.06);
+overflow:hidden;
+}
+.cardHeader{
+padding: 16px 18px 10px;
+border-bottom: 1px solid rgba(255,255,255,.08);
+background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,0));
+}
+.cardTitle{
+margin:0;
+font-size: 18px;
+letter-spacing: .2px;
+}
+.cardSub{
+margin: 6px 0 0;
+font-size: 13px;
+color: var(--muted2);
+line-height:1.35;
+}
+.cardBody{
+padding: 14px 18px 18px;
+}
+.row{
+display:flex;
+gap: var(--gap2);
+flex-wrap:wrap;
+}
+.row.nowrap{
+flex-wrap:nowrap;
+}
+.pill{
+display:inline-flex;
+gap: 7px;
+align-items:center;
+padding: 6px 10px;
+border-radius: 999px;
+font-size: 12px;
+border: 1px solid rgba(255,255,255,.12);
+background: rgba(255,255,255,.03);
+color: var(--muted);
+user-select:none;
+}
+.pill strong{
+color: var(--text);
+font-weight: 750;
+}
+.badge{
+display:inline-flex;
+align-items:center;
+gap: 7px;
+font-size: 12px;
+padding: 5px 10px;
+border-radius: 999px;
+border: 1px solid rgba(255,255,255,.12);
+background: rgba(255,255,255,.03);
+color: var(--muted);
+}
+.badge.good{
+border-color: rgba(124,255,178,.25);
+background: rgba(124,255,178,.06);
+color: #c8ffe0;
+}
+.badge.warn{
+border-color: rgba(255,184,107,.28);
+background: rgba(255,184,107,.07);
+color: #ffe0b6;
+}
+.badge.info{
+border-color: rgba(123,223,242,.25);
+background: rgba(123,223,242,.06);
+color: #d7fbff;
+}
+.badge.risk{
+border-color: rgba(255,122,122,.28);
+background: rgba(255,122,122,.06);
+color: #ffd0d0;
+}
+
+/* ---------- Inputs ---------- */
+label{
+display:block;
+font-size: 12px;
+color: var(--muted);
+margin-bottom: 6px;
+letter-spacing: .2px;
+}
+.input, select, textarea{
+width:100%;
+padding: 11px 12px;
+border-radius: 14px;
+border: 1px solid rgba(255,255,255,.12);
+background: rgba(10,15,25,.40);
+color: var(--text);
+outline:none;
+transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.input:focus, select:focus, textarea:focus{
+border-color: rgba(240,201,106,.45);
+box-shadow: var(--focus);
+background: rgba(10,15,25,.52);
+}
+textarea{
+min-height: 92px;
+resize: vertical;
+line-height:1.35;
+}
+.help{
+margin-top: 6px;
+font-size: 12px;
+color: var(--muted2);
+line-height: 1.35;
+}
+
+/* ---------- Buttons ---------- */
+.btn{
+border: 1px solid rgba(255,255,255,.12);
+background: rgba(255,255,255,.04);
+color: var(--text);
+padding: 10px 12px;
+border-radius: 14px;
+cursor:pointer;
+font-weight: 700;
+letter-spacing: .1px;
+transition: transform .08s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+user-select:none;
+outline:none;
+}
+.btn:hover{
+transform: translateY(-1px);
+border-color: rgba(240,201,106,.32);
+background: rgba(255,255,255,.06);
+}
+.btn:focus-visible{
+box-shadow: var(--focus);
+}
+.btn.primary{
+border-color: rgba(240,201,106,.65);
+background: linear-gradient(180deg, rgba(240,201,106,.30), rgba(240,201,106,.16));
+}
+.btn.primary:hover{
+border-color: rgba(240,201,106,.80);
+background: linear-gradient(180deg, rgba(240,201,106,.38), rgba(240,201,106,.18));
+box-shadow: 0 12px 30px rgba(240,201,106,.10);
+}
+.btn.ghost{
+background: rgba(255,255,255,.02);
+}
+.btn.small{
+padding: 8px 10px;
+border-radius: 12px;
+font-size: 13px;
+}
+.btnRow{
+display:flex;
+gap: 10px;
+flex-wrap:wrap;
+align-items:center;
+margin-top: 12px;
+}
+
+/* ---------- Lists / mini-cards ---------- */
+.miniGrid{
+display:grid;
+grid-template-columns: 1fr 1fr;
+gap: 12px;
+}
+@media (max-width: 720px){
+.miniGrid{
+grid-template-columns: 1fr;
+}
+}
+.miniCard{
+padding: 12px;
+border-radius: var(--radius2);
+border: 1px solid rgba(255,255,255,.10);
+background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+transition: transform .08s ease, border-color .15s ease, background .15s ease;
+cursor:pointer;
+}
+.miniCard:hover{
+transform: translateY(-1px);
+border-color: rgba(240,201,106,.28);
+background: radial-gradient(600px 140px at 20% 0%, rgba(123,223,242,.08), transparent 55%),
+radial-gradient(600px 140px at 80% 0%, rgba(240,201,106,.08), transparent 55%),
+linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+}
+.miniTitle{
+font-weight: 780;
+margin: 0 0 6px;
+font-size: 14px;
+letter-spacing: .2px;
+}
+.miniDesc{
+margin: 0 0 10px;
+color: var(--muted2);
+font-size: 12px;
+line-height:1.35;
+}
+.tagRow{
+display:flex;
+gap: 6px;
+flex-wrap:wrap;
+}
+.tag{
+font-size: 11px;
+padding: 3px 8px;
+border-radius: 999px;
+border: 1px solid rgba(255,255,255,.10);
+color: var(--muted);
+background: rgba(255,255,255,.02);
+}
+
+/* ---------- Output ---------- */
+.outputWrap{
+margin-top: 12px;
+border-radius: var(--radius2);
+border: 1px solid rgba(255,255,255,.10);
+background: rgba(5,8,14,.45);
+overflow:hidden;
+}
+.outputTop{
+padding: 10px 12px;
+display:flex;
+gap: 10px;
+flex-wrap:wrap;
+align-items:center;
+justify-content:space-between;
+border-bottom: 1px solid rgba(255,255,255,.08);
+background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+}
+.outputMeta{
+display:flex;
+gap: 8px;
+flex-wrap:wrap;
+align-items:center;
+}
+.output{
+padding: 14px 14px 16px;
+font-family: var(--mono);
+font-size: 12.5px;
+line-height: 1.55;
+white-space: pre-wrap;
+word-break: break-word;
+color: rgba(234,240,255,.94);
+}
+
+/* ---------- Right column helper card ---------- */
+.sideList{
+display:flex;
+flex-direction:column;
+gap: 10px;
+}
+.sideItem{
+display:flex;
+gap: 10px;
+align-items:flex-start;
+padding: 12px;
+border-radius: var(--radius2);
+border: 1px solid rgba(255,255,255,.10);
+background: rgba(255,255,255,.03);
+}
+.sideIcon{
+width: 28px;
+height: 28px;
+border-radius: 10px;
+border: 1px solid rgba(255,255,255,.12);
+display:flex;
+align-items:center;
+justify-content:center;
+background: rgba(255,255,255,.03);
+flex: 0 0 auto;
+box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+font-size: 15px;
+}
+.sideText h4{
+margin: 0 0 4px;
+font-size: 13px;
+letter-spacing:.2px;
+}
+.sideText p{
+margin: 0;
+font-size: 12px;
+color: var(--muted2);
+line-height:1.35;
+}
+
+/* ---------- Modal ---------- */
+.backdrop{
+position:fixed;
+inset:0;
+background: rgba(0,0,0,.55);
+backdrop-filter: blur(6px);
+display:none;
+align-items:center;
+justify-content:center;
+padding: 18px;
+z-index: 999;
+}
+.modal{
+width: min(920px, 100%);
+border-radius: 20px;
+border: 1px solid rgba(255,255,255,.14);
+background: radial-gradient(900px 260px at 15% 0%, rgba(123,223,242,.12), transparent 58%),
+radial-gradient(900px 260px at 85% 0%, rgba(240,201,106,.12), transparent 58%),
+linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+box-shadow: 0 30px 90px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.07);
+overflow:hidden;
+}
+.modalHead{
+padding: 14px 16px 10px;
+display:flex;
+align-items:flex-start;
+justify-content:space-between;
+gap: 10px;
+border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.modalTitle{
+margin:0;
+font-size: 16px;
+font-weight: 800;
+letter-spacing:.2px;
+}
+.modalSub{
+margin: 4px 0 0;
+font-size: 12px;
+color: var(--muted2);
+line-height:1.35;
+}
+.xBtn{
+border: 1px solid rgba(255,255,255,.12);
+background: rgba(255,255,255,.04);
+color: var(--text);
+border-radius: 12px;
+width: 36px;
+height: 36px;
+cursor:pointer;
+font-weight: 900;
+display:flex;
+align-items:center;
+justify-content:center;
+transition: transform .08s ease, border-color .15s ease, background .15s ease;
+}
+.xBtn:hover{
+transform: translateY(-1px);
+border-color: rgba(240,201,106,.35);
+background: rgba(255,255,255,.06);
+}
+.modalBody{
+padding: 12px 16px 16px;
+}
+.callout{
+border: 1px solid rgba(240,201,106,.35);
+background: rgba(240,201,106,.08);
+border-radius: 14px;
+padding: 10px 12px;
+font-size: 12.5px;
+color: rgba(255,236,200,.95);
+line-height:1.4;
+margin-bottom: 12px;
+}
+.sectionLabel{
+font-size: 11px;
+letter-spacing:.3px;
+color: var(--muted);
+text-transform: uppercase;
+margin: 12px 0 6px;
+}
+.twoCol{
+display:grid;
+grid-template-columns: 1fr 1fr;
+gap: 12px;
+}
+@media (max-width: 860px){
+.twoCol{
+grid-template-columns: 1fr;
+}
+}
+.box{
+border: 1px solid rgba(255,255,255,.10);
+background: rgba(255,255,255,.03);
+border-radius: 14px;
+padding: 10px 12px;
+}
+.boxTitle{
+margin: 0 0 8px;
+font-size: 12px;
+color: var(--muted);
+letter-spacing:.2px;
+}
+.boxBody{
+margin:0;
+font-size: 12.5px;
+color: rgba(234,240,255,.92);
+line-height:1.45;
+white-space: pre-wrap;
+}
+
+/* ---------- Utility ---------- */
+.split{
+display:grid;
+grid-template-columns: 1fr 1fr;
+gap: 12px;
+margin-top: 12px;
+}
+@media (max-width: 900px){
+.split{
+grid-template-columns: 1fr;
+}
+}
+.hr{
+height:1px;
+background: rgba(255,255,255,.08);
+margin: 14px 0;
+}
+.tiny{
+font-size: 12px;
+color: var(--muted2);
+line-height:1.35;
+}
+.kbd{
+display:inline-block;
+padding: 2px 6px;
+border-radius: 8px;
+border: 1px solid rgba(255,255,255,.14);
+background: rgba(255,255,255,.03);
+font-size: 11px;
+font-family: var(--mono);
+color: rgba(234,240,255,.92);
+}
+.footer{
+margin-top: 18px;
+text-align:center;
+font-size: 12px;
+color: rgba(183,198,234,.78);
+}
+
+/* ---------- Toast ---------- */
+.toast{
+position: fixed;
+left: 50%;
+bottom: 18px;
+transform: translateX(-50%);
+background: rgba(10,15,25,.75);
+border: 1px solid rgba(255,255,255,.14);
+border-radius: 14px;
+padding: 10px 12px;
+box-shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+color: rgba(234,240,255,.95);
+font-size: 12.5px;
+display:none;
+z-index: 1000;
+backdrop-filter: blur(8px);
+max-width: min(680px, calc(100% - 24px));
+text-align:center;
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="topbar">
+<div class="brand">
+<div class="logo" aria-hidden="true"></div>
+<div class="brandText">
+<div class="brandTitle">Business Analyst Builder (BAB)</div>
+<div class="brandSub">Build clearer requirements, faster.</div>
+</div>
+</div>
+<nav class="tabs" aria-label="Primary navigation">
+<button class="tab" data-route="home">Home</button>
+<button class="tab" data-route="build">Build</button>
+<button class="tab" data-route="jargon">BA Jargon</button>
+<button class="tab" data-route="templates">Templates</button>
+<button class="tab" data-route="examples">Examples</button>
+<button class="tab" data-route="about">About</button>
+</nav>
+</header>
+
+<main id="app" class="grid" aria-live="polite"></main>
+
+<div class="footer">
+Drafts save locally in your browser (export if you want a backup).
+</div>
+</div>
+
+<!-- MODAL -->
+<div class="backdrop" id="backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+<div class="modal" role="document" aria-label="Details">
+<div class="modalHead">
+<div>
+<h3 class="modalTitle" id="modalTitle">Title</h3>
+<p class="modalSub" id="modalSub">Sub</p>
+</div>
+<button class="xBtn" id="modalClose" aria-label="Close">x</button>
+</div>
+<div class="modalBody" id="modalBody"></div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" aria-live="polite"></div>
+
+<script>
+/* =========================================================
+   BAB — data
+   ========================================================= */
+const APP_KEY = "BAB_STATE_V2";
+
+const MEETING_TYPES = [
+  { id:"discovery", label:"Discovery", desc:"Understand the problem, context, rules, constraints, unknowns." },
+  { id:"workshop", label:"Workshop", desc:"Hands-on session to align and produce outputs (decisions + artefacts)." },
+  { id:"validation", label:"Validation", desc:"Confirm requirements, assumptions, and acceptance criteria are correct." },
+  { id:"walkthrough", label:"Walkthrough", desc:"Review artefacts end-to-end with stakeholders, catch gaps early." },
+  { id:"decision", label:"Decision", desc:"Align on option, trade-offs, sign-offs, and next steps." },
+];
+
+const STAKEHOLDER_ROLES = [
+  { id:"business_sme", label:"Business SME", desc:"Knows the real-world process and exceptions." },
+  { id:"operator", label:"Frontline Operator", desc:"Uses the process daily; sees pain points first." },
+  { id:"product_owner", label:"Product Owner", desc:"Prioritises outcomes; owns backlog and value." },
+  { id:"solution_arch", label:"Solution Architect", desc:"Owns solution shape and constraints; needs clear rules and trade-offs." },
+  { id:"tech_lead", label:"Tech Lead", desc:"Owns technical feasibility, constraints, and delivery plan." },
+  { id:"engineering", label:"Engineer/Developer", desc:"Builds/changes the system; needs clarity and testability." },
+  { id:"support", label:"Support/Service Desk", desc:"Handles incidents; cares about runbooks and triage." },
+  { id:"risk_legal", label:"Risk/Legal/Compliance", desc:"Ensures obligations are met; cares about evidence and approvals." },
+  { id:"security", label:"Security", desc:"Reviews data and access; cares about controls." },
+  { id:"customer", label:"Customer/End user", desc:"Experiences the outcome; validates usefulness." },
+  { id:"exec", label:"Sponsor/Exec", desc:"Funds the work; cares about impact and risk." },
+];
+
+const NFR_PRESETS = [
+  { key:"performance", label:"Performance", prompt:"Response time, throughput, peak load." },
+  { key:"availability", label:"Availability", prompt:"Uptime target, outage tolerance, failover expectations." },
+  { key:"security", label:"Security", prompt:"Access controls, least privilege, audit logging." },
+  { key:"privacy", label:"Privacy", prompt:"Personal data handling, retention, consent." },
+  { key:"compliance", label:"Compliance", prompt:"Policies/regulations, evidence, approvals." },
+  { key:"usability", label:"Usability / CX", prompt:"Clarity, accessibility, error handling, training needs." },
+  { key:"operability", label:"Operability", prompt:"Monitoring, alerts, runbooks, support handover." },
+  { key:"data_quality", label:"Data quality", prompt:"Accuracy, timeliness, source of truth." },
+];
+
+const JARGON = [
+  {
+    key: "requirements",
+    title: "Requirements",
+    short: "A clear description of what the solution must do (and sometimes must not do).",
+    tags: ["artefacts","requirements","delivery"],
+    plain: "What the solution needs to do so everyone agrees on what is being built.",
+    why: ["Prevents rework by aligning expectations early.","Makes scope and testing clearer."],
+    good: "When an incident is P1 and affects multiple stations, the operator must notify the on-call senior within 10 minutes.",
+    bad: "Make escalations better and faster.",
+    mistakes: ["Writing wishes instead of testable statements.","Mixing scope, solution design, and requirements together."],
+    helps: "BAB helps you frame the problem, capture scope, and turn expectations into copy-ready outputs."
+  },
+  {
+    key: "acceptance_criteria",
+    title: "Acceptance Criteria",
+    short: "Clear conditions that must be true for work to be considered done (testable and specific).",
+    tags: ["artefacts","agile","delivery","testing"],
+    plain: "How we prove the requirement is met — what 'done' means in practice.",
+    why: ["Reduces disputes at sign-off.","Helps testing and stakeholder validation."],
+    good: "Given a P1 incident, when the operator selects 'multi-station impact', then the system logs the escalation and shows senior contact steps.",
+    bad: "It works as expected.",
+    mistakes: ["Vague statements ('works', 'easy', 'fast').","Missing exceptions and edge cases."],
+    helps: "BAB includes an Acceptance Criteria section and supports Given/When/Then or simple conditions of satisfaction."
+  },
+  {
+    key: "process_mapping",
+    title: "Process Mapping",
+    short: "Documenting how work flows from start to finish (AS-IS and/or TO-BE), including decisions and exceptions.",
+    tags: ["process","discovery","delivery"],
+    plain: "Writing down how work actually happens (and how it should happen) step by step.",
+    why: ["Stops teams fixing the wrong problem.","Reveals hidden steps, handoffs, and exceptions."],
+    good: "AS-IS: Alert → Operator checks severity → Decision: multi-station? → Escalate if threshold met → Log outcome.",
+    bad: "The process is messy and needs improvement.",
+    mistakes: ["Skipping exceptions.","Jumping to TO-BE before agreeing AS-IS.","Over-diagramming too early."],
+    helps: "BAB supports text-first AS-IS/TO-BE capture so you can align quickly before diagramming."
+  },
+  {
+    key: "nfr",
+    title: "Non-functional requirements (NFRs)",
+    short: "Constraints and quality attributes like performance, security, availability, and usability.",
+    tags: ["requirements","delivery","risk"],
+    plain: "How well the solution must work — not just what it does.",
+    why: ["Prevents late surprises (security, performance, compliance).","Improves customer experience and operability."],
+    good: "Availability: 99.9% during business hours. Security: all escalations logged for audit. Performance: page loads < 2s under peak.",
+    bad: "Must be fast and secure.",
+    mistakes: ["Being vague.","Not naming owners or evidence.","Forgetting operability/support needs."],
+    helps: "BAB provides a lightweight NFR checklist and a place to write specifics."
+  },
+  {
+    key: "uat",
+    title: "User Acceptance Testing (UAT)",
+    short: "Business validation that the solution meets agreed requirements and is usable in the real world.",
+    tags: ["testing","delivery"],
+    plain: "A structured check by the business that the solution is fit for purpose.",
+    why: ["Confirms outcomes, not just technical correctness.","Catches gaps before release."],
+    good: "UAT plan maps scenarios to acceptance criteria; pass/fail recorded; issues triaged with owners; sign-off captured.",
+    bad: "UAT = 'looks fine' in a quick demo.",
+    mistakes: ["No mapping to requirements/AC.","No agreed sign-off criteria.","No evidence captured."],
+    helps: "BAB includes a UAT readiness checklist and sign-off prompts."
+  },
+  {
+    key: "scope",
+    title: "Scope",
+    short: "The agreed boundaries of what will be delivered — and what won't.",
+    tags: ["planning","scope","delivery"],
+    plain: "The line that stops the work ballooning. In-scope is included; out-of-scope is explicitly excluded.",
+    why: ["Avoids 'just one more thing' requests.","Keeps delivery focused on outcomes."],
+    good: "In scope: weekend escalation rules + decision aid. Out of scope: staffing changes and weekday processes.",
+    bad: "In scope: everything related to on-call.",
+    mistakes: ["Missing out-of-scope.","Describing outcomes instead of boundaries."],
+    helps: "BAB outputs an in-scope/out-of-scope section that's easy to paste into notes."
+  }
+];
+
+const TEMPLATES = [
+  {
+    id: "meeting_prep",
+    title: "Meeting prep output (copy-ready)",
+    desc: "Problem, goal, scope, success measures, constraints, assumptions, risks, plus optional AC, process, NFR, UAT, dev summary.",
+    tags: ["meeting","artefact"],
+    toText: () => generateMeetingPrepText(getBuildState())
+  },
+  {
+    id: "user_story",
+    title: "User story shell",
+    desc: "Simple story + acceptance criteria structure (Agile-friendly).",
+    tags: ["agile","requirements"],
+    toText: () => [
+      "User story",
+      "- As a [role]",
+      "- I want [capability]",
+      "- So that [benefit/outcome]",
+      "",
+      "Acceptance criteria (conditions of satisfaction)",
+      "- ",
+      "- ",
+      "",
+      "Notes / rules / exceptions",
+      "- ",
+      "",
+      "Non-functional needs",
+      "- ",
+      "",
+      "Dependencies / risks",
+      "- "
+    ].join("\n")
+  },
+  {
+    id: "decision_log",
+    title: "Decision log entry",
+    desc: "Simple decision capture you can paste into notes or Jira/Confluence.",
+    tags: ["planning","risk"],
+    toText: () => [
+      "Decision:",
+      "- [What was decided?]",
+      "",
+      "Context:",
+      "- [Why now? What problem/goal?]",
+      "",
+      "Options considered:",
+      "- Option A — [pros/cons]",
+      "- Option B — [pros/cons]",
+      "",
+      "Trade-offs accepted:",
+      "- [time / cost / risk / quality]",
+      "",
+      "Approver:",
+      "- [name/role] by [date]",
+      "",
+      "Next steps:",
+      "- [action] — owner — date"
+    ].join("\n")
+  }
+];
+
+const EXAMPLES_GOOD = [
+  {
+    title: "Process mapping (AS-IS / TO-BE) — done well",
+    summary: "Step-by-step, roles, decisions, exceptions, and a clear future-state change summary.",
+    body: [
+      "AS-IS (today)",
+      "1) Alert triggers on weekend",
+      "2) Operator checks severity and affected stations",
+      "3) Decision: multi-station impact or unclear root cause?",
+      "   - Yes → call senior on-call + log reason",
+      "   - No → attempt standard recovery + monitor",
+      "4) Operator logs outcome and next actions",
+      "",
+      "Exceptions / edge cases",
+      "- If station count data is delayed, treat as 'unclear' and escalate",
+      "- If tooling is down, use fallback channel and backfill later",
+      "",
+      "TO-BE (after change)",
+      "1) Operator uses decision aid to classify incident",
+      "2) Escalation happens only when thresholds are met",
+      "3) Every escalation logs the rule/threshold used",
+      "",
+      "Success measure",
+      "- % weekend escalations to seniors (baseline vs 4 weeks after)",
+      "- % escalations with logged threshold"
+    ].join("\n")
+  },
+  {
+    title: "Acceptance criteria (Given/When/Then) — done well",
+    summary: "Testable, covers edge cases, maps to outcomes.",
+    body: [
+      "Requirement: Operators must log an escalation reason when escalating to seniors.",
+      "",
+      "AC1 (happy path)",
+      "Given an incident is classified as P1",
+      "When the operator selects 'Escalate to senior'",
+      "Then the system requires an escalation reason before submission",
+      "",
+      "AC2 (edge case)",
+      "Given the incident tool is unavailable",
+      "When the operator escalates via fallback channel",
+      "Then the operator records the reason in the fallback template and backfills it later"
+    ].join("\n")
+  },
+  {
+    title: "UAT readiness — done well",
+    summary: "Clear sign-off, mapping to acceptance criteria, evidence captured.",
+    body: [
+      "UAT readiness checklist",
+      "- Requirements agreed and signed off",
+      "- Acceptance criteria finalised and mapped to scenarios",
+      "- Data/privacy/compliance obligations confirmed",
+      "- Support/runbook updates drafted",
+      "- UAT environment available + test accounts ready",
+      "",
+      "Sign-off criteria",
+      "- All 'must-have' scenarios pass",
+      "- No critical defects open",
+      "- Business owner signs off in writing"
+    ].join("\n")
+  }
+];
+
+const EXAMPLES_BAD = [
+  {
+    title: "Process mapping — done poorly",
+    summary: "Vague statements, missing decisions and exceptions, no future state.",
+    body: [
+      "The process is messy on weekends.",
+      "Operators should do better escalation.",
+      "Seniors should be called less.",
+      "We will improve the process."
+    ].join("\n")
+  },
+  {
+    title: "Acceptance criteria — done poorly",
+    summary: "Not testable, no clear conditions, no edge cases.",
+    body: [
+      "Acceptance criteria:",
+      "- Works well",
+      "- Easy to use",
+      "- Fast"
+    ].join("\n")
+  },
+  {
+    title: "UAT — done poorly",
+    summary: "No mapping to requirements, no evidence, no sign-off.",
+    body: [
+      "UAT will be done by the business.",
+      "If it looks fine, we will go live."
+    ].join("\n")
+  }
+];
+
+/* =========================================================
+   BAB — state
+   ========================================================= */
+const DEFAULT_STATE = {
+  route: "home",
+  build: {
+    meetingType: "discovery",
+    stakeholderRole: "business_sme",
+    initiative: "",
+    problem: "",
+    goal: "",
+    inScope: "",
+    outScope: "",
+    success: "",
+    constraints: "",
+    assumptions: "",
+    risks: "",
+    // Acceptance criteria
+    acFormat: "gwt", // gwt | bullets
+    acceptanceCriteria: "",
+    // Process mapping
+    asIsSteps: "",
+    decisionPoints: "",
+    exceptions: "",
+    toBeChanges: "",
+    // NFRs
+    nfrSelected: ["usability","operability","security"],
+    nfrNotes: "",
+    // UAT
+    uatNotes: "",
+    uatSignoff: "",
+    // Dev-ready summary
+    devNotes: "",
+    notes: "",
+    includeAgenda: true,
+    includeQuestions: true,
+    includeCompliance: true,
+    includeAC: true,
+    includeProcess: true,
+    includeNFR: true,
+    includeUAT: true,
+    includeDevSummary: true
+  },
+  jargon: {
+    q: "",
+    category: "all"
+  }
+};
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(APP_KEY);
+    if(!raw) return structuredClone(DEFAULT_STATE);
+    const parsed = JSON.parse(raw);
+    return deepMerge(structuredClone(DEFAULT_STATE), parsed);
+  }catch{
+    return structuredClone(DEFAULT_STATE);
+  }
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(APP_KEY, JSON.stringify(state));
+  }catch{}
+}
+
+function deepMerge(base, patch){
+  if(!patch || typeof patch !== "object") return base;
+  for(const k of Object.keys(patch)){
+    const v = patch[k];
+    if(v && typeof v === "object" && !Array.isArray(v)){
+      base[k] = deepMerge(base[k] || {}, v);
+    }else{
+      base[k] = v;
+    }
+  }
+  return base;
+}
+
+let state = loadState();
+
+function getBuildState(){
+  return state.build;
+}
+
+/* =========================================================
+   Helpers
+   ========================================================= */
+const $ = (sel, root=document) => root.querySelector(sel);
+
+function escapeHtml(str){
+  return String(str ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
+
+function toast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => {
+    t.style.display = "none";
+  }, 1800);
+}
+
+async function copyText(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    toast("Copied to clipboard.");
+  }catch{
+    downloadText("BAB-output.txt", text);
+    toast("Clipboard blocked — downloaded instead.");
+  }
+}
+
+function downloadText(filename, text){
+  const blob = new Blob([text], {type:"text/plain;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function downloadJson(filename, obj){
+  downloadText(filename, JSON.stringify(obj, null, 2));
+}
+
+function pickMeetingLabel(id){
+  return MEETING_TYPES.find(m => m.id===id)?.label || "Discovery";
+}
+
+function pickStakeholderLabel(id){
+  return STAKEHOLDER_ROLES.find(s => s.id===id)?.label || "Business SME";
+}
+
+function normalizeLines(s){
+  return String(s||"").trim().replace(/\r\n/g,"\n");
+}
+
+function bulletLines(text, fallback="- (add items)"){
+  const t = normalizeLines(text);
+  if(!t) return [fallback];
+  const lines = t.split("\n").map(l => l.trim()).filter(Boolean);
+  const looksBulleted = lines.every(l => l.startsWith("-") || l.startsWith("•") || /^\d+\)/.test(l) || /^\d+\./.test(l));
+  if(looksBulleted){
+    return lines.map(l => l.startsWith("•") ? "- " + l.slice(1).trim() : l);
+  }
+  return lines.map(l => l.startsWith("-") ? l : "- " + l);
+}
+
+function numberedLines(text, fallback="1) (add steps)"){
+  const t = normalizeLines(text);
+  if(!t) return [fallback];
+  const lines = t.split("\n").map(l => l.trim()).filter(Boolean);
+  const alreadyNumbered = lines.every(l => /^\d+[\)\.]\s+/.test(l));
+  if(alreadyNumbered) return lines;
+  return lines.map((l, i) => `${i+1}) ${l.replace(/^\-+\s*/,"")}`);
+}
+
+function acToText(b){
+  const raw = normalizeLines(b.acceptanceCriteria);
+  if(raw) return raw;
+  if(b.acFormat === "gwt"){
+    return [
+      "AC1",
+      "Given [context]",
+      "When [action]",
+      "Then [expected result]",
+      "",
+      "AC2 (edge case)",
+      "Given [exception context]",
+      "When [action]",
+      "Then [expected result]"
+    ].join("\n");
+  }
+  return [
+    "- Condition of satisfaction 1",
+    "- Condition of satisfaction 2",
+    "- Condition of satisfaction 3"
+  ].join("\n");
+}
+
+function nfrToText(b){
+  const selected = Array.isArray(b.nfrSelected) ? b.nfrSelected : [];
+  const labels = selected
+    .map(k => NFR_PRESETS.find(x => x.key === k))
+    .filter(Boolean)
+    .map(x => `- ${x.label}: ${x.prompt}`);
+  const extra = normalizeLines(b.nfrNotes);
+  if(extra){
+    labels.push("");
+    labels.push("Notes:");
+    labels.push(...bulletLines(extra, "- (add specifics)"));
+  }
+  return labels.length ? labels.join("\n") : "- (select or add NFRs)";
+}
+
+function processToText(b){
+  const asIs = numberedLines(b.asIsSteps, "1) (add AS-IS steps)");
+  const decisions = bulletLines(b.decisionPoints, "- (add decision points)");
+  const exceptions = bulletLines(b.exceptions, "- (add exceptions)");
+  const toBe = numberedLines(b.toBeChanges, "1) (add TO-BE changes)");
+  return [
+    "AS-IS (today)",
+    ...asIs,
+    "",
+    "Decision points",
+    ...decisions,
+    "",
+    "Exceptions / edge cases",
+    ...exceptions,
+    "",
+    "TO-BE (after change)",
+    ...toBe
+  ].join("\n");
+}
+
+function devSummaryToText(b){
+  const extra = normalizeLines(b.devNotes);
+  return [
+    "Dev-ready summary",
+    `- Outcome: ${normalizeLines(b.goal) || "(define outcome)"}`,
+    `- Scope (in): ${normalizeLines(b.inScope) ? "see below" : "(add in-scope)"}`,
+    `- Scope (out): ${normalizeLines(b.outScope) ? "see below" : "(add out-of-scope)"}`,
+    "- Key rules/decisions: (add 3–6 bullet points)",
+    "- Acceptance criteria: (mapped below)",
+    "- NFRs: (listed below)",
+    "- Dependencies/risks: (listed below)",
+    "- Open questions: (add items)",
+    extra ? ("\nNotes:\n" + extra) : ""
+  ].join("\n");
+}
+
+function uatToText(b){
+  const notes = normalizeLines(b.uatNotes);
+  const signoff = normalizeLines(b.uatSignoff);
+  const base = [
+    "UAT readiness checklist",
+    "- Requirements agreed and signed off",
+    "- Acceptance criteria finalised and mapped to scenarios",
+    "- Data/privacy/compliance obligations confirmed",
+    "- Support/runbook updates drafted (if applicable)",
+    "- UAT environment + test accounts ready",
+    "- Defect triage process agreed (who decides severity/priority)",
+    "",
+    "UAT sign-off (capture in writing)",
+    "- Who signs off (name/role): (add)",
+    "- Sign-off criteria (pass conditions): (add)",
+    "- Target date: (add)"
+  ].join("\n");
+  const parts = [base];
+  if(notes){
+    parts.push("");
+    parts.push("UAT notes");
+    parts.push(notes);
+  }
+  if(signoff){
+    parts.push("");
+    parts.push("Sign-off notes");
+    parts.push(signoff);
+  }
+  return parts.join("\n");
+}
+
+/* =========================================================
+   Output generator
+   ========================================================= */
+function generateMeetingPrepText(b){
+  const meetingLabel = pickMeetingLabel(b.meetingType);
+  const stakeholderLabel = pickStakeholderLabel(b.stakeholderRole);
+  const problem = normalizeLines(b.problem) || "(write in plain English)";
+  const goal = normalizeLines(b.goal) || "(state outcome + measurable impact)";
+  const inScopeLines = bulletLines(b.inScope);
+  const outScopeLines = bulletLines(b.outScope);
+  const successLines = bulletLines(b.success);
+  const constraintsLines = bulletLines(b.constraints);
+  const assumptionsLines = bulletLines(b.assumptions);
+  const risksLines = bulletLines(b.risks);
+
+  const prompts = [
+    "- What data sources are authoritative? Who owns them?",
+    "- What do we not trust yet (data gaps)?",
+    "- Pick 1–3 success measures (leading + lagging)."
+  ];
+
+  const agenda = [
+    `Suggested agenda (${meetingLabel})`,
+    "1) Context & outcome (5 min)",
+    "2) Current understanding / AS-IS (10–15 min)",
+    "3) Rules, constraints, and unknowns (10 min)",
+    "4) Confirm scope + trade-offs (10 min)",
+    "5) Actions, owners, next meeting (5 min)"
+  ].join("\n");
+
+  const tailoredQs = [
+    "- What problem are we solving (in one sentence)?",
+    "- Who is impacted and how will we measure success?",
+    "- What is in-scope vs out-of-scope for this release?",
+    "- What are the top unknowns (and who will confirm them by when)?",
+    "- What does 'done' look like for the business?",
+    "- What constraints (time, budget, policy/legal, tech) shape our options?",
+    "- What risks/dependencies could block delivery?",
+    "- What data do we have to prove the problem exists (and what data is missing)?",
+    "- What rules do you follow today (including exceptions)?",
+    "- What problems happen most often and what triggers them?",
+    "- What would make your job noticeably easier?",
+    "- Are there any compliance 'must-haves' that block release if missing?"
+  ];
+
+  const compliance = [
+    "Compliance prompts",
+    "- What policy/regulatory requirements apply?",
+    "- What evidence/logging/retention is required?",
+    "- What approvals are mandatory before release?"
+  ].join("\n");
+
+  const decisions = [
+    "Decisions & next steps",
+    "Decisions to capture in writing:",
+    "- What are we building (scope) and what are we NOT building (out-of-scope)?",
+    "- What trade-offs did we accept (time/cost/risk)?",
+    "- Who signs off (name/role) and by when?",
+    "",
+    "Actions / follow-ups (write owners + dates):",
+    "- Validate assumptions",
+    "- Confirm dependencies",
+    "- Confirm success measures and data sources"
+  ].join("\n");
+
+  const lines = [];
+  lines.push("BAB — Output");
+  lines.push(`Meeting type: ${meetingLabel}`);
+  lines.push(`Stakeholder focus: ${stakeholderLabel}`);
+  lines.push(`Initiative: ${normalizeLines(b.initiative) || "(name the initiative)"}`);
+  lines.push("");
+  lines.push("Requirements Gathering (Elicitation)");
+  lines.push(`- Problem: ${problem}`);
+  lines.push(`- Goal/outcome: ${goal}`);
+  lines.push("");
+  lines.push("Scope");
+  lines.push("In scope:");
+  lines.push(...inScopeLines.map(l => "  " + l));
+  lines.push("");
+  lines.push("Out of scope:");
+  lines.push(...outScopeLines.map(l => "  " + l));
+  lines.push("");
+  lines.push("Data & success (evidence + measurement)");
+  lines.push(...successLines.map(l => "  " + l));
+  lines.push("");
+  lines.push("Prompts:");
+  lines.push(...prompts);
+  lines.push("");
+  lines.push("Constraints (tech/time/budget/policy/legal)");
+  lines.push(...constraintsLines.map(l => "  " + l));
+  lines.push("");
+  lines.push("Assumptions (validate with owner + date)");
+  lines.push(...assumptionsLines.map(l => "  " + l));
+  lines.push("");
+  lines.push("Risks & dependencies (owner + next check)");
+  lines.push(...risksLines.map(l => "  " + l));
+  lines.push("");
+
+  if(b.includeProcess){
+    lines.push("Process mapping (text-first)");
+    lines.push(processToText(b));
+    lines.push("");
+  }
+
+  if(b.includeAC){
+    lines.push("Acceptance criteria");
+    lines.push(acToText(b));
+    lines.push("");
+  }
+
+  if(b.includeNFR){
+    lines.push("Non-functional requirements (NFRs)");
+    lines.push(nfrToText(b));
+    lines.push("");
+  }
+
+  if(b.includeDevSummary){
+    lines.push(devSummaryToText(b));
+    lines.push("");
+  }
+
+  if(b.includeUAT){
+    lines.push(uatToText(b));
+    lines.push("");
+  }
+
+  if(b.includeAgenda){
+    lines.push(agenda);
+    lines.push("");
+  }
+
+  if(b.includeQuestions){
+    lines.push("Tailored questions to ask");
+    lines.push(...tailoredQs);
+    lines.push("");
+  }
+
+  if(b.includeCompliance){
+    lines.push(compliance);
+    lines.push("");
+  }
+
+  lines.push(decisions);
+
+  const extra = normalizeLines(b.notes);
+  if(extra){
+    lines.push("");
+    lines.push("Notes");
+    lines.push(extra);
+  }
+
+  return lines.join("\n");
+}
+
+/* =========================================================
+   Router + render
+   ========================================================= */
+function setRoute(route){
+  state.route = route;
+  saveState();
+  render();
+  syncHash();
+}
+
+function syncHash(){
+  const r = state.route || "home";
+  const h = "#" + encodeURIComponent(r);
+  if(location.hash !== h) location.hash = h;
+}
+
+function initFromHash(){
+  const h = decodeURIComponent((location.hash || "").replace("#","")).trim();
+  if(h){
+    const ok = ["home","build","jargon","templates","examples","about"].includes(h);
+    if(ok) state.route = h;
+  }
+}
+
+window.addEventListener("hashchange", () => {
+  initFromHash();
+  saveState();
+  render();
+});
+
+/* =========================================================
+   Views
+   ========================================================= */
+function viewHome(){
+  return `<section class="card">
+  <div class="cardHeader">
+    <div class="pill"><strong>BAB</strong> — Business Analyst Builder</div>
+    <h2 class="cardTitle" style="margin-top:10px;">A clean toolkit for requirements, process mapping, validation, and delivery support.</h2>
+    <p class="cardSub">
+      BAB generates copy-ready outputs for meeting prep, process mapping (AS-IS/TO-BE), acceptance criteria, NFRs, and UAT readiness. Plus a jargon library with real examples.
+    </p>
+    <div class="btnRow">
+      <button class="btn primary" data-go="build">Start building</button>
+      <button class="btn" data-go="jargon">Browse jargon</button>
+    </div>
+  </div>
+  <div class="cardBody">
+    <div class="split">
+      <div class="miniCard" data-go="build" role="button" tabindex="0">
+        <div class="tagRow">
+          <span class="tag">Tool</span>
+          <span class="tag">Copy-ready</span>
+        </div>
+        <p class="miniTitle">Build a complete BA output</p>
+        <p class="miniDesc">
+          Requirements gathering → scope → success measures → process mapping → acceptance criteria → NFRs → UAT readiness → dev handover summary.
+        </p>
+        <div class="btnRow" style="margin-top:10px;">
+          <button class="btn primary small" data-go="build">Open builder</button>
+        </div>
+      </div>
+      <div class="miniCard" data-go="jargon" role="button" tabindex="0">
+        <div class="tagRow">
+          <span class="tag">Learning</span>
+        </div>
+        <p class="miniTitle">BA jargon, explained properly</p>
+        <p class="miniDesc">Plain English, good vs bad examples, common mistakes — including process mapping, NFRs, and UAT.</p>
+        <div class="btnRow" style="margin-top:10px;">
+          <button class="btn small" data-go="jargon">Browse jargon</button>
+          <button class="btn small" data-open-modal="meeting_types">Meeting types</button>
+          <button class="btn small" data-open-modal="stakeholder_types">Stakeholder types</button>
+        </div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <p class="tiny">
+      Tip: press <span class="kbd">Ctrl</span> / <span class="kbd">Cmd</span> + <span class="kbd">K</span> to jump to jargon search.
+    </p>
+  </div>
+</section>
+<aside class="card">
+  <div class="cardHeader">
+    <h3 class="cardTitle">What BAB outputs</h3>
+    <p class="cardSub">Designed to paste straight into notes, Jira, Confluence, or a handover email.</p>
+  </div>
+  <div class="cardBody">
+    <div class="sideList">
+      <div class="sideItem">
+        <div class="sideIcon">🧩</div>
+        <div class="sideText">
+          <h4>Meeting + workshop prep</h4>
+          <p>Agenda, questions, decisions, follow-ups.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🗺️</div>
+        <div class="sideText">
+          <h4>Process mapping</h4>
+          <p>Text-first AS-IS / TO-BE, decisions, exceptions.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">✅</div>
+        <div class="sideText">
+          <h4>Acceptance criteria + UAT readiness</h4>
+          <p>Testable "done", plus sign-off prompts.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🧱</div>
+        <div class="sideText">
+          <h4>NFR prompts</h4>
+          <p>Security, performance, operability, compliance, CX.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🧾</div>
+        <div class="sideText">
+          <h4>Dev-ready summary</h4>
+          <p>A short handover section that removes ambiguity.</p>
+        </div>
+      </div>
+    </div>
+    <div class="btnRow" style="margin-top:14px;">
+      <button class="btn primary" data-go="build">Start building</button>
+      <button class="btn" data-go="examples">See examples</button>
+    </div>
+  </div>
+</aside>`;
+}
+
+function viewBuild(){
+  const b = getBuildState();
+  const out = generateMeetingPrepText(b);
+  return `<section class="card">
+  <div class="cardHeader">
+    <div class="pill"><strong>Tool</strong> — Build output</div>
+    <h2 class="cardTitle" style="margin-top:10px;">Requirements & delivery support builder</h2>
+    <p class="cardSub">
+      Fill in what you know. BAB generates a structured output that supports requirements, process mapping, validation, and handover.
+    </p>
+  </div>
+  <div class="cardBody">
+    <div class="split">
+      <div>
+        <label>Meeting type</label>
+        <select id="meetingType">
+          ${MEETING_TYPES.map(m => `<option value="${m.id}" ${b.meetingType===m.id?"selected":""}>${escapeHtml(m.label)}</option>`).join("")}
+        </select>
+        <div class="help" id="meetingDesc"></div>
+      </div>
+      <div>
+        <label>Stakeholder role</label>
+        <select id="stakeholderRole">
+          ${STAKEHOLDER_ROLES.map(s => `<option value="${s.id}" ${b.stakeholderRole===s.id?"selected":""}>${escapeHtml(s.label)}</option>`).join("")}
+        </select>
+        <div class="help" id="stakeholderDesc"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <label>Initiative</label>
+      <input id="initiative" class="input" placeholder="e.g., NOC Seniors On Call" value="${escapeHtml(b.initiative)}" />
+      <div class="help">Name the work so it can be referenced consistently across notes, tickets, and comms.</div>
+    </div>
+
+    <div class="hr"></div>
+    <h3 style="margin:0 0 8px; font-size:14px; letter-spacing:.2px;">Requirements Gathering (Elicitation)</h3>
+    <div class="split">
+      <div>
+        <label>Problem (plain English)</label>
+        <textarea id="problem" placeholder="What's happening today, in human terms?">${escapeHtml(b.problem)}</textarea>
+        <div class="help">Start here. Avoid jumping straight to solution. Keep it observable.</div>
+      </div>
+      <div>
+        <label>Goal / outcome</label>
+        <textarea id="goal" placeholder="What outcome do we want? (ideally measurable)">${escapeHtml(b.goal)}</textarea>
+        <div class="help">Describe impact first (time, cost, risk, CX), then how you'll measure it.</div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div>
+        <label>Scope — In scope</label>
+        <textarea id="inScope" placeholder="Work boundaries that ARE included (one per line).">${escapeHtml(b.inScope)}</textarea>
+        <div class="help">Scope is boundaries, not promises. Keep it specific to deliverables and rules.</div>
+      </div>
+      <div>
+        <label>Scope — Out of scope</label>
+        <textarea id="outScope" placeholder="Work boundaries that are NOT included (one per line).">${escapeHtml(b.outScope)}</textarea>
+        <div class="help">Out-of-scope protects timeline and stops "just add one more thing".</div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div>
+        <label>Data & success measures</label>
+        <textarea id="success" placeholder="How will we measure success? (leading + lagging)">${escapeHtml(b.success)}</textarea>
+        <div class="help">Pick 1–3 measures. Name data owners and baselines where possible.</div>
+      </div>
+      <div>
+        <label>Constraints</label>
+        <textarea id="constraints" placeholder="Non-negotiables (tech/time/budget/policy/legal)">${escapeHtml(b.constraints)}</textarea>
+        <div class="help">Constraints shape your options and trade-offs. Capture them early.</div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div>
+        <label>Assumptions</label>
+        <textarea id="assumptions" placeholder="Assumptions to validate (include owner + date if possible)">${escapeHtml(b.assumptions)}</textarea>
+        <div class="help">Assumptions become risks if wrong. Turn them into follow-ups.</div>
+      </div>
+      <div>
+        <label>Risks & dependencies</label>
+        <textarea id="risks" placeholder="Risks/dependencies + owners + next check">${escapeHtml(b.risks)}</textarea>
+        <div class="help">Capture owners and next check dates. Track decisions and changes as you go.</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <h3 style="margin:0 0 8px; font-size:14px; letter-spacing:.2px;">Process mapping (text-first)</h3>
+    <div class="split">
+      <div>
+        <label>AS-IS steps (today)</label>
+        <textarea id="asIsSteps" placeholder="One step per line (BAB will number them).">${escapeHtml(b.asIsSteps)}</textarea>
+        <div class="help">Capture reality, including handoffs. Keep it simple and observable.</div>
+      </div>
+      <div>
+        <label>TO-BE changes (after change)</label>
+        <textarea id="toBeChanges" placeholder="One future-state step per line (BAB will number them).">${escapeHtml(b.toBeChanges)}</textarea>
+        <div class="help">Describe what changes. Avoid over-designing at this stage.</div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div>
+        <label>Decision points</label>
+        <textarea id="decisionPoints" placeholder="Decision rules (e.g., thresholds, IF/THEN).">${escapeHtml(b.decisionPoints)}</textarea>
+        <div class="help">These become requirements and acceptance criteria. Include exceptions.</div>
+      </div>
+      <div>
+        <label>Exceptions / edge cases</label>
+        <textarea id="exceptions" placeholder="Known exceptions or tricky scenarios.">${escapeHtml(b.exceptions)}</textarea>
+        <div class="help">Most rework comes from missed edge cases. Add them early.</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <h3 style="margin:0 0 8px; font-size:14px; letter-spacing:.2px;">Acceptance criteria</h3>
+    <div class="split">
+      <div>
+        <label>Format</label>
+        <select id="acFormat">
+          <option value="gwt" ${b.acFormat==="gwt"?"selected":""}>Given / When / Then</option>
+          <option value="bullets" ${b.acFormat==="bullets"?"selected":""}>Conditions of satisfaction (bullets)</option>
+        </select>
+        <div class="help">Use Given/When/Then when you need testable scenarios. Use bullets for quick clarity.</div>
+      </div>
+      <div>
+        <label>Acceptance criteria text</label>
+        <textarea id="acceptanceCriteria" placeholder="Write ACs here (or leave blank to use the built-in starter).">${escapeHtml(b.acceptanceCriteria)}</textarea>
+        <div class="help">Keep it testable. Include at least one edge case if it matters.</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <h3 style="margin:0 0 8px; font-size:14px; letter-spacing:.2px;">Non-functional requirements (NFRs)</h3>
+    <div class="split">
+      <div>
+        <label>Select NFR areas</label>
+        <div class="row" style="gap:8px;">
+          ${NFR_PRESETS.map(n => `<label class="pill" style="cursor:pointer;">
+            <input type="checkbox" class="nfrCheck" value="${escapeHtml(n.key)}" ${Array.isArray(b.nfrSelected) && b.nfrSelected.includes(n.key) ? "checked" : ""} />
+            <span>${escapeHtml(n.label)}</span>
+          </label>`).join("")}
+        </div>
+        <div class="help">Tick what matters, then add specifics (targets, constraints, evidence, owners).</div>
+      </div>
+      <div>
+        <label>NFR notes (specifics)</label>
+        <textarea id="nfrNotes" placeholder="Add targets/constraints/owners (e.g., response time, audit logging, uptime).">${escapeHtml(b.nfrNotes)}</textarea>
+        <div class="help">Example: "Performance: &lt;2s load at peak; Security: log all escalations for audit."</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <h3 style="margin:0 0 8px; font-size:14px; letter-spacing:.2px;">Dev-ready handover summary (optional)</h3>
+    <div>
+      <label>Dev notes (optional)</label>
+      <textarea id="devNotes" placeholder="Add rules, open questions, key constraints, or handover notes for dev/architecture.">${escapeHtml(b.devNotes)}</textarea>
+      <div class="help">Keep this short. The goal is fewer back-and-forth questions during build.</div>
+    </div>
+
+    <div class="hr"></div>
+    <h3 style="margin:0 0 8px; font-size:14px; letter-spacing:.2px;">UAT readiness (optional)</h3>
+    <div class="split">
+      <div>
+        <label>UAT notes</label>
+        <textarea id="uatNotes" placeholder="Who will test, how issues will be logged, environment notes, etc.">${escapeHtml(b.uatNotes)}</textarea>
+        <div class="help">Capture how UAT will run in practice. Name owners.</div>
+      </div>
+      <div>
+        <label>Sign-off notes</label>
+        <textarea id="uatSignoff" placeholder="Who signs off, what counts as pass, and target date.">${escapeHtml(b.uatSignoff)}</textarea>
+        <div class="help">Make sign-off explicit to avoid last-minute disputes.</div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+    <div class="split">
+      <div>
+        <label>Extra notes (optional)</label>
+        <textarea id="notes" placeholder="Anything else you want included in the output (optional)">${escapeHtml(b.notes)}</textarea>
+        <div class="help">This is appended at the bottom of the output.</div>
+      </div>
+      <div>
+        <label>Include sections in output</label>
+        <div class="row" style="margin-top:4px;">
+          <label class="pill" style="cursor:pointer;">
+            <input type="checkbox" id="incProcess" ${b.includeProcess ? "checked":""} />
+            <span>Process mapping</span>
+          </label>
+          <label class="pill" style="cursor:pointer;">
+            <input type="checkbox" id="incAC" ${b.includeAC ? "checked":""} />
+            <span>Acceptance criteria</span>
+          </label>
+          <label class="pill" style="cursor:pointer;">
+            <input type="checkbox" id="incNFR" ${b.includeNFR ? "checked":""} />
+            <span>NFRs</span>
+          </label>
+          <label class="pill" style="cursor:pointer;">
+            <input type="checkbox" id="incDev" ${b.includeDevSummary ? "checked":""} />
+            <span>Dev summary</span>
+          </label>
+          <label class="pill" style="cursor:pointer;">
+            <input type="checkbox" id="incUAT" ${b.includeUAT ? "checked":""} />
+            <span>UAT readiness</span>
+          </label>
+          <label class="pill" style="cursor:pointer;">
+            <input type="checkbox" id="incAgenda" ${b.includeAgenda ? "checked":""} />
+            <span>Agenda</span>
+          </label>
+          <label class="pill" style="cursor:pointer;">
+            <input type="checkbox" id="incQuestions" ${b.includeQuestions ? "checked":""} />
+            <span>Tailored questions</span>
+          </label>
+          <label class="pill" style="cursor:pointer;">
+            <input type="checkbox" id="incCompliance" ${b.includeCompliance ? "checked":""} />
+            <span>Compliance prompts</span>
+          </label>
+        </div>
+        <div class="btnRow">
+          <button class="btn primary" id="copyBuild">Copy output</button>
+          <button class="btn ghost" id="downloadBuild">Download .txt</button>
+          <button class="btn" id="exportState">Export draft (.json)</button>
+          <button class="btn" id="importState">Import draft</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json" style="display:none" />
+      </div>
+    </div>
+
+    <div class="outputWrap">
+      <div class="outputTop">
+        <div class="outputMeta">
+          <span class="badge info">Output</span>
+          <span class="badge">${pickMeetingLabel(b.meetingType)}</span>
+          <span class="badge">${pickStakeholderLabel(b.stakeholderRole)}</span>
+        </div>
+        <div class="row">
+          <button class="btn small" id="copyMini">Copy</button>
+          <button class="btn small" id="downloadMini">Download</button>
+        </div>
+      </div>
+      <div class="output" id="buildOutput">${escapeHtml(out)}</div>
+    </div>
+  </div>
+</section>
+<aside class="card">
+  <div class="cardHeader">
+    <h3 class="cardTitle">Quick guidance</h3>
+    <p class="cardSub">The small habits that prevent rework.</p>
+  </div>
+  <div class="cardBody">
+    <div class="sideList">
+      <div class="sideItem">
+        <div class="sideIcon">🎯</div>
+        <div class="sideText">
+          <h4>Outcome before solution</h4>
+          <p>Write the goal in a measurable way. Let the solution emerge through constraints and rules.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🗺️</div>
+        <div class="sideText">
+          <h4>Process map in text first</h4>
+          <p>Agree AS-IS before TO-BE. Add decisions and exceptions — that's where the real work is.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">✅</div>
+        <div class="sideText">
+          <h4>Make "done" testable</h4>
+          <p>Acceptance criteria should be pass/fail, not vibes. Include one edge case.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🧱</div>
+        <div class="sideText">
+          <h4>NFRs reduce surprises</h4>
+          <p>Security, operability, compliance, performance — if it matters, write it down now.</p>
+        </div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <p class="tiny">
+      Shortcut: <span class="kbd">Ctrl</span>/<span class="kbd">Cmd</span> + <span class="kbd">K</span> jumps to jargon search.
+    </p>
+  </div>
+</aside>`;
+}
+
+function viewJargon(){
+  const q = (state.jargon.q || "").trim().toLowerCase();
+  const cat = state.jargon.category || "all";
+  const allTags = Array.from(new Set(JARGON.flatMap(j => j.tags || []))).sort();
+  const categories = ["all", ...allTags];
+  const filtered = JARGON.filter(item => {
+    const matchesCat = (cat === "all") || (item.tags || []).includes(cat);
+    if(!matchesCat) return false;
+    if(!q) return true;
+    const hay = (item.title + " " + item.short + " " + (item.tags||[]).join(" ") + " " + item.plain).toLowerCase();
+    return hay.includes(q);
+  });
+
+  return `<section class="card">
+  <div class="cardHeader">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <div>
+        <h2 class="cardTitle">BA jargon — explained with examples</h2>
+        <p class="cardSub">Plain English, good vs bad, common mistakes, and how BAB helps.</p>
+      </div>
+      <div class="pill"><strong>${filtered.length}</strong> shown</div>
+    </div>
+    <div class="row nowrap" style="margin-top:12px;">
+      <div style="flex:1 1 auto; min-width: 220px;">
+        <input id="jargonSearch" class="input" placeholder="Search terms… (e.g., process mapping, NFR, UAT)" value="${escapeHtml(state.jargon.q)}" />
+      </div>
+      <div style="flex:0 0 220px; min-width: 200px;">
+        <select id="jargonCategory">
+          ${categories.map(c => `<option value="${escapeHtml(c)}" ${c===cat?"selected":""}>${c==="all"?"All categories":escapeHtml(c)}</option>`).join("")}
+        </select>
+      </div>
+      <div style="flex:0 0 auto;">
+        <button class="btn" id="jargonClear">Clear</button>
+      </div>
+    </div>
+  </div>
+  <div class="cardBody">
+    <div class="miniGrid">
+      ${filtered.map(j => `<div class="miniCard" data-jargon="${escapeHtml(j.key)}" role="button" tabindex="0">
+        <p class="miniTitle">${escapeHtml(j.title)}</p>
+        <p class="miniDesc">${escapeHtml(j.short)}</p>
+        <div class="tagRow">
+          ${(j.tags||[]).slice(0,3).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}
+        </div>
+      </div>`).join("")}
+    </div>
+    <div class="hr"></div>
+    <p class="tiny">
+      Press <span class="kbd">Enter</span> on a card to open it. Press <span class="kbd">Esc</span> to close.
+    </p>
+  </div>
+</section>
+<aside class="card">
+  <div class="cardHeader">
+    <h3 class="cardTitle">Quick guides</h3>
+    <p class="cardSub">Useful in interviews and stakeholder conversations.</p>
+  </div>
+  <div class="cardBody">
+    <div class="btnRow">
+      <button class="btn" data-open-modal="meeting_types">Meeting types</button>
+      <button class="btn" data-open-modal="stakeholder_types">Stakeholder types</button>
+      <button class="btn primary" data-go="build">Open builder</button>
+    </div>
+    <div class="hr"></div>
+    <div class="sideList">
+      <div class="sideItem">
+        <div class="sideIcon">🗺️</div>
+        <div class="sideText">
+          <h4>Process mapping</h4>
+          <p>Text-first AS-IS/TO-BE is usually enough unless the role explicitly requires BPMN/Visio.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🧱</div>
+        <div class="sideText">
+          <h4>NFRs</h4>
+          <p>If a JD mentions "security/performance/compliance", they expect NFR thinking.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">✅</div>
+        <div class="sideText">
+          <h4>UAT</h4>
+          <p>Map scenarios to acceptance criteria, capture evidence, and make sign-off explicit.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>`;
+}
+
+function viewTemplates(){
+  return `<section class="card">
+  <div class="cardHeader">
+    <h2 class="cardTitle">Templates</h2>
+    <p class="cardSub">Copy-ready snippets you can paste into notes, Jira, Confluence, or email.</p>
+  </div>
+  <div class="cardBody">
+    <div class="miniGrid">
+      ${TEMPLATES.map(t => `<div class="miniCard" data-template="${escapeHtml(t.id)}" role="button" tabindex="0">
+        <p class="miniTitle">${escapeHtml(t.title)}</p>
+        <p class="miniDesc">${escapeHtml(t.desc)}</p>
+        <div class="tagRow">
+          ${(t.tags||[]).map(x => `<span class="tag">${escapeHtml(x)}</span>`).join("")}
+        </div>
+      </div>`).join("")}
+    </div>
+    <div class="hr"></div>
+    <p class="tiny">Click a template to preview, then copy or download.</p>
+  </div>
+</section>
+<aside class="card">
+  <div class="cardHeader">
+    <h3 class="cardTitle">How to use templates</h3>
+    <p class="cardSub">Keep them short. Add owners and dates. Capture decisions.</p>
+  </div>
+  <div class="cardBody">
+    <div class="sideList">
+      <div class="sideItem">
+        <div class="sideIcon">📌</div>
+        <div class="sideText">
+          <h4>Owners + dates</h4>
+          <p>Turning unknowns into follow-ups is the difference between notes and progress.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🧾</div>
+        <div class="sideText">
+          <h4>Decision capture</h4>
+          <p>Write down trade-offs and approvers. Future you will thank you.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🔁</div>
+        <div class="sideText">
+          <h4>Reuse</h4>
+          <p>Templates are meant to be copied. Don't over-customise the structure.</p>
+        </div>
+      </div>
+    </div>
+    <div class="btnRow" style="margin-top:14px;">
+      <button class="btn primary" data-go="build">Use the builder</button>
+      <button class="btn" data-go="examples">Examples</button>
+    </div>
+  </div>
+</aside>`;
+}
+
+function viewExamples(){
+  return `<section class="card">
+  <div class="cardHeader">
+    <h2 class="cardTitle">Examples</h2>
+    <p class="cardSub">Good vs bad examples for process mapping, acceptance criteria, and UAT readiness.</p>
+  </div>
+  <div class="cardBody">
+    <div class="split">
+      <div>
+        <div class="badge good">Done well (${EXAMPLES_GOOD.length})</div>
+        <div style="height:10px;"></div>
+        <div class="sideList">
+          ${EXAMPLES_GOOD.map((ex, idx) => `<div class="miniCard" data-example="good:${idx}" role="button" tabindex="0">
+            <p class="miniTitle">${escapeHtml(ex.title)}</p>
+            <p class="miniDesc">${escapeHtml(ex.summary)}</p>
+            <div class="tagRow">
+              <span class="tag">good</span>
+              <span class="tag">copy-ready</span>
+            </div>
+          </div>`).join("")}
+        </div>
+      </div>
+      <div>
+        <div class="badge risk">Done poorly (${EXAMPLES_BAD.length})</div>
+        <div style="height:10px;"></div>
+        <div class="sideList">
+          ${EXAMPLES_BAD.map((ex, idx) => `<div class="miniCard" data-example="bad:${idx}" role="button" tabindex="0">
+            <p class="miniTitle">${escapeHtml(ex.title)}</p>
+            <p class="miniDesc">${escapeHtml(ex.summary)}</p>
+            <div class="tagRow">
+              <span class="tag">bad</span>
+              <span class="tag">anti-pattern</span>
+            </div>
+          </div>`).join("")}
+        </div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <p class="tiny">Use these as your standard. If your draft looks like the "bad" version, it needs structure and testability.</p>
+  </div>
+</section>
+<aside class="card">
+  <div class="cardHeader">
+    <h3 class="cardTitle">What else could be added later?</h3>
+    <p class="cardSub">Only if you want to expand BAB without bloating it.</p>
+  </div>
+  <div class="cardBody">
+    <div class="sideList">
+      <div class="sideItem">
+        <div class="sideIcon">🧭</div>
+        <div class="sideText">
+          <h4>Stakeholder map / RACI</h4>
+          <p>Quickly separate approvers vs consulted vs informed, and reduce late surprises.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">📌</div>
+        <div class="sideText">
+          <h4>Backlog refinement prompts</h4>
+          <p>Simple checklist to refine stories, dependencies, and acceptance criteria before sprint planning.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🧪</div>
+        <div class="sideText">
+          <h4>Scenario library</h4>
+          <p>Reusable scenario patterns to speed up testable acceptance criteria.</p>
+        </div>
+      </div>
+    </div>
+    <div class="btnRow" style="margin-top:14px;">
+      <button class="btn primary" data-go="build">Back to builder</button>
+      <button class="btn" data-go="templates">Templates</button>
+    </div>
+  </div>
+</aside>`;
+}
+
+function viewAbout(){
+  return `<section class="card">
+  <div class="cardHeader">
+    <h2 class="cardTitle">About BAB</h2>
+    <p class="cardSub">A simple, private toolkit to help you produce clear BA outputs quickly.</p>
+  </div>
+  <div class="cardBody">
+    <div class="twoCol">
+      <div class="box">
+        <div class="boxTitle">What BAB includes</div>
+        <p class="boxBody">
+- Meeting/workshop prep
+- Process mapping (AS-IS / TO-BE, decisions, exceptions)
+- Acceptance criteria support
+- Non-functional requirement prompts
+- UAT readiness checklist + sign-off prompts
+- Dev-ready summary section
+- Jargon library + examples
+        </p>
+      </div>
+      <div class="box">
+        <div class="boxTitle">Privacy</div>
+        <p class="boxBody">
+BAB stores drafts in your browser (localStorage). Export/import JSON if you want backups. No login. No server. No tracking.
+        </p>
+      </div>
+    </div>
+    <div class="btnRow">
+      <button class="btn primary" data-go="build">Open builder</button>
+      <button class="btn" data-go="jargon">Browse jargon</button>
+      <button class="btn" id="resetAll">Reset local data</button>
+    </div>
+    <div class="hr"></div>
+    <p class="tiny">
+      Keyboard shortcuts: <br/>• <span class="kbd">Ctrl</span>/<span class="kbd">Cmd</span> + <span class="kbd">K</span> → Jargon search <br/>• <span class="kbd">Esc</span> → Close modal
+    </p>
+  </div>
+</section>
+<aside class="card">
+  <div class="cardHeader">
+    <h3 class="cardTitle">Notes</h3>
+    <p class="cardSub">If you want a multi-page site, this single file can be split later.</p>
+  </div>
+  <div class="cardBody">
+    <div class="sideList">
+      <div class="sideItem">
+        <div class="sideIcon">📄</div>
+        <div class="sideText">
+          <h4>Single file</h4>
+          <p>Easy to host on GitHub Pages. No build step.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">💾</div>
+        <div class="sideText">
+          <h4>Export/Import</h4>
+          <p>Use JSON export for backups or moving between devices.</p>
+        </div>
+      </div>
+      <div class="sideItem">
+        <div class="sideIcon">🧱</div>
+        <div class="sideText">
+          <h4>Next step (optional)</h4>
+          <p>Add a "RACI/stakeholder map" module if a role strongly demands it.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>`;
+}
+
+/* =========================================================
+   Render + wire
+   ========================================================= */
+function render(){
+  const app = $("#app");
+
+  document.querySelectorAll(".tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.route === state.route);
+  });
+
+  let html = "";
+  if(state.route === "home") html = viewHome();
+  else if(state.route === "build") html = viewBuild();
+  else if(state.route === "jargon") html = viewJargon();
+  else if(state.route === "templates") html = viewTemplates();
+  else if(state.route === "examples") html = viewExamples();
+  else html = viewAbout();
+
+  app.innerHTML = html;
+
+  app.querySelectorAll("[data-go]").forEach(el => {
+    el.addEventListener("click", () => setRoute(el.dataset.go));
+  });
+
+  app.querySelectorAll(".miniCard,[role='button'][tabindex='0']").forEach(el => {
+    el.addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){
+        e.preventDefault();
+        el.click();
+      }
+    });
+  });
+
+  if(state.route === "build") wireBuild();
+  if(state.route === "jargon") wireJargon();
+  if(state.route === "templates") wireTemplates();
+  if(state.route === "examples") wireExamples();
+  if(state.route === "about") wireAbout();
+
+  app.querySelectorAll("[data-open-modal]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.openModal;
+      if(id === "meeting_types") openMeetingTypesModal();
+      if(id === "stakeholder_types") openStakeholderTypesModal();
+    });
+  });
+}
+
+/* =========================================================
+   Build wiring
+   ========================================================= */
+function wireBuild(){
+  const b = state.build;
+  const meetingDesc = $("#meetingDesc");
+  const stakeholderDesc = $("#stakeholderDesc");
+
+  const updateDesc = () => {
+    meetingDesc.textContent = MEETING_TYPES.find(m => m.id === b.meetingType)?.desc || "";
+    stakeholderDesc.textContent = STAKEHOLDER_ROLES.find(s => s.id === b.stakeholderRole)?.desc || "";
+  };
+
+  const updateOutput = () => {
+    $("#buildOutput").textContent = generateMeetingPrepText(b);
+  };
+
+  const bind = (id, key, typeHint=null) => {
+    const el = $("#" + id);
+    const handler = () => {
+      if(typeHint === "checkbox"){
+        b[key] = el.checked;
+      }else{
+        b[key] = el.value;
+      }
+      saveState();
+      updateDesc();
+      updateOutput();
+    };
+    el.addEventListener("input", handler);
+    el.addEventListener("change", handler);
+  };
+
+  bind("meetingType","meetingType");
+  bind("stakeholderRole","stakeholderRole");
+  bind("initiative","initiative");
+  bind("problem","problem");
+  bind("goal","goal");
+  bind("inScope","inScope");
+  bind("outScope","outScope");
+  bind("success","success");
+  bind("constraints","constraints");
+  bind("assumptions","assumptions");
+  bind("risks","risks");
+  bind("asIsSteps","asIsSteps");
+  bind("decisionPoints","decisionPoints");
+  bind("exceptions","exceptions");
+  bind("toBeChanges","toBeChanges");
+  bind("acceptanceCriteria","acceptanceCriteria");
+  bind("nfrNotes","nfrNotes");
+  bind("devNotes","devNotes");
+  bind("uatNotes","uatNotes");
+  bind("uatSignoff","uatSignoff");
+  bind("notes","notes");
+
+  bind("incProcess","includeProcess","checkbox");
+  bind("incAC","includeAC","checkbox");
+  bind("incNFR","includeNFR","checkbox");
+  bind("incDev","includeDevSummary","checkbox");
+  bind("incUAT","includeUAT","checkbox");
+  bind("incAgenda","includeAgenda","checkbox");
+  bind("incQuestions","includeQuestions","checkbox");
+  bind("incCompliance","includeCompliance","checkbox");
+
+  $("#acFormat").addEventListener("change", (e) => {
+    b.acFormat = e.target.value;
+    saveState();
+    updateOutput();
+  });
+
+  document.querySelectorAll(".nfrCheck").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const checked = Array.from(document.querySelectorAll(".nfrCheck:checked")).map(x => x.value);
+      b.nfrSelected = checked;
+      saveState();
+      updateOutput();
+    });
+  });
+
+  $("#copyBuild").addEventListener("click", () => copyText(generateMeetingPrepText(b)));
+  $("#copyMini").addEventListener("click", () => copyText(generateMeetingPrepText(b)));
+
+  $("#downloadBuild").addEventListener("click", () =>
+    downloadText("BAB-output.txt", generateMeetingPrepText(b))
+  );
+  $("#downloadMini").addEventListener("click", () =>
+    downloadText("BAB-output.txt", generateMeetingPrepText(b))
+  );
+
+  $("#exportState").addEventListener("click", () => {
+    downloadJson("BAB-draft.json", state);
+    toast("Draft exported.");
+  });
+
+  $("#importState").addEventListener("click", () => {
+    $("#importFile").click();
+  });
+
+  $("#importFile").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const parsed = JSON.parse(reader.result);
+        state = deepMerge(structuredClone(DEFAULT_STATE), parsed);
+        saveState();
+        render();
+        toast("Draft imported.");
+      }catch{
+        toast("Invalid JSON file.");
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  updateDesc();
+  updateOutput();
+}
+
+/* =========================================================
+   Jargon wiring
+   ========================================================= */
+function wireJargon(){
+  const search = $("#jargonSearch");
+  const cat = $("#jargonCategory");
+
+  search.addEventListener("input", () => {
+    state.jargon.q = search.value;
+    saveState();
+    render();
+  });
+
+  cat.addEventListener("change", () => {
+    state.jargon.category = cat.value;
+    saveState();
+    render();
+  });
+
+  $("#jargonClear").addEventListener("click", () => {
+    state.jargon.q = "";
+    state.jargon.category = "all";
+    saveState();
+    render();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "Escape"){
+      closeModal();
+    }
+  });
+
+  document.querySelectorAll("[data-jargon]").forEach(el => {
+    el.addEventListener("click", () => {
+      const key = el.dataset.jargon;
+      const item = JARGON.find(j => j.key === key);
+      if(item) openJargonModal(item);
+    });
+  });
+}
+
+/* =========================================================
+   Templates wiring
+   ========================================================= */
+function wireTemplates(){
+  document.querySelectorAll("[data-template]").forEach(el => {
+    el.addEventListener("click", () => {
+      const t = TEMPLATES.find(x => x.id === el.dataset.template);
+      if(!t) return;
+      openModal({
+        title: t.title,
+        sub: t.desc,
+        body: `<pre class="boxBody">${escapeHtml(t.toText())}</pre>`,
+        copyValue: t.toText()
+      });
+    });
+  });
+}
+
+/* =========================================================
+   Examples wiring
+   ========================================================= */
+function wireExamples(){
+  document.querySelectorAll("[data-example]").forEach(el => {
+    el.addEventListener("click", () => {
+      const [type, idx] = el.dataset.example.split(":");
+      const src = type === "good" ? EXAMPLES_GOOD : EXAMPLES_BAD;
+      const ex = src[Number(idx)];
+      if(!ex) return;
+      openModal({
+        title: ex.title,
+        sub: ex.summary,
+        body: `<pre class="boxBody">${escapeHtml(ex.body)}</pre>`,
+        copyValue: ex.body
+      });
+    });
+  });
+}
+
+/* =========================================================
+   About wiring
+   ========================================================= */
+function wireAbout(){
+  $("#resetAll")?.addEventListener("click", () => {
+    if(confirm("Clear all local BAB data? This cannot be undone.")){
+      localStorage.removeItem(APP_KEY);
+      state = structuredClone(DEFAULT_STATE);
+      render();
+      toast("Local data cleared.");
+    }
+  });
+}
+
+/* =========================================================
+   Modals
+   ========================================================= */
+function openModal({title, sub="", body="", copyValue=null}){
+  $("#modalTitle").textContent = title;
+  $("#modalSub").textContent = sub;
+  $("#modalBody").innerHTML = body + (copyValue ? `
+    <div class="btnRow">
+      <button class="btn primary" id="modalCopy">Copy</button>
+    </div>` : "");
+  $("#backdrop").style.display = "flex";
+  $("#backdrop").setAttribute("aria-hidden","false");
+
+  if(copyValue){
+    $("#modalCopy").addEventListener("click", () => copyText(copyValue));
+  }
+}
+
+function closeModal(){
+  $("#backdrop").style.display = "none";
+  $("#backdrop").setAttribute("aria-hidden","true");
+}
+
+$("#modalClose").addEventListener("click", closeModal);
+$("#backdrop").addEventListener("click", (e) => {
+  if(e.target.id === "backdrop") closeModal();
+});
+
+function openJargonModal(j){
+  openModal({
+    title: j.title,
+    sub: j.short,
+    body: `
+      <div class="callout">${escapeHtml(j.plain)}</div>
+
+      <div class="sectionLabel">Why it matters</div>
+      <ul>${j.why.map(x => `<li>${escapeHtml(x)}</li>`).join("")}</ul>
+
+      <div class="sectionLabel">Good example</div>
+      <pre class="boxBody">${escapeHtml(j.good)}</pre>
+
+      <div class="sectionLabel">Bad example</div>
+      <pre class="boxBody">${escapeHtml(j.bad)}</pre>
+
+      <div class="sectionLabel">Common mistakes</div>
+      <ul>${j.mistakes.map(x => `<li>${escapeHtml(x)}</li>`).join("")}</ul>
+
+      <div class="sectionLabel">How BAB helps</div>
+      <p class="boxBody">${escapeHtml(j.helps)}</p>
+    `,
+    copyValue: j.good
+  });
+}
+
+function openMeetingTypesModal(){
+  openModal({
+    title: "Meeting types",
+    sub: "Common BA sessions and when to use them",
+    body: `<ul>${MEETING_TYPES.map(m => `<li><strong>${escapeHtml(m.label)}</strong> — ${escapeHtml(m.desc)}</li>`).join("")}</ul>`
+  });
+}
+
+function openStakeholderTypesModal(){
+  openModal({
+    title: "Stakeholder types",
+    sub: "Who to involve and why",
+    body: `<ul>${STAKEHOLDER_ROLES.map(s => `<li><strong>${escapeHtml(s.label)}</strong> — ${escapeHtml(s.desc)}</li>`).join("")}</ul>`
+  });
+}
+
+/* =========================================================
+   Init
+   ========================================================= */
+initFromHash();
+render();
+
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.addEventListener("click", () => setRoute(btn.dataset.route));
+});
+
+document.addEventListener("keydown", (e) => {
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k"){
+    e.preventDefault();
+    setRoute("jargon");
+    setTimeout(() => $("#jargonSearch")?.focus(), 0);
+  }
+  if(e.key === "Escape"){
+    closeModal();
+  }
+});
+</script>
+
+</body>
+</html>
