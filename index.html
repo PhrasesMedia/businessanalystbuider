@@ -49,6 +49,36 @@
 color-scheme: dark;
 }
 
+[data-theme="light"] {
+--bg-primary: #ffffff;
+--bg-secondary: #f8fafc;
+--bg-tertiary: #f1f5f9;
+--surface: #ffffff;
+--surface-hover: #f8fafc;
+
+--text-primary: #0f172a;
+--text-secondary: #334155;
+--text-muted: #64748b;
+
+--accent-primary: #6366f1;
+--accent-primary-light: #818cf8;
+--accent-secondary: #0ea5e9;
+--accent-tertiary: #8b5cf6;
+
+--success: #10b981;
+--warning: #f59e0b;
+--danger: #ef4444;
+--info: #3b82f6;
+
+--border: rgba(0,0,0,.1);
+--border-strong: rgba(0,0,0,.15);
+--shadow-sm: 0 2px 8px rgba(0,0,0,.05);
+--shadow-md: 0 8px 24px rgba(0,0,0,.08);
+--shadow-lg: 0 16px 48px rgba(0,0,0,.12);
+
+color-scheme: light;
+}
+
 *{
 box-sizing:border-box;
 }
@@ -1063,11 +1093,15 @@ font-size: 1rem;
         <p id="activeProjectIndicator">Stakeholder mapping, requirements, and delivery artefacts</p>
       </div>
     </div>
+    <button id="themeToggle" class="btn btn-sm" style="margin-left: auto; margin-right: 20px;" title="Toggle Dark/Light Mode">
+      <span id="themeIcon">🌙</span> <span id="themeLabel">Light Mode</span>
+    </button>
     <nav class="nav">
       <button class="nav-btn" data-route="projects">Projects</button>
       <button class="nav-btn active" data-route="home">Project Outline</button>
       <button class="nav-btn" data-route="stakeholders">Stakeholders</button>
       <button class="nav-btn" data-route="requirements">Requirements</button>
+      <button class="nav-btn" data-route="acceptance">Acceptance Criteria</button>
       <button class="nav-btn" data-route="process">Process</button>
       <button class="nav-btn" data-route="output">Output</button>
       <button class="nav-btn" data-route="library">Library</button>
@@ -2222,17 +2256,6 @@ function viewRequirements() {
             <textarea class="input" id="reqSuccess" placeholder="How will we measure success?">${escapeHtml(r.success)}</textarea>
             <div class="input-hint">Leading and lagging indicators</div>
           </div>
-          
-          <div class="form-group">
-            <label>Acceptance Criteria</label>
-            <div class="input-hint" style="margin-bottom: 12px;">Define testable conditions with clear steps to reach the desired outcome</div>
-            
-            <div id="acceptanceCriteriaList" style="display: flex; flex-direction: column; gap: 16px;">
-              <!-- Criteria items will be rendered here -->
-            </div>
-            
-            <button type="button" class="btn btn-sm" id="addAcceptanceCriterion" style="margin-top: 12px;">+ Add Acceptance Criterion</button>
-          </div>
 
           <div class="form-group">
             <label>Constraints</label>
@@ -2254,8 +2277,47 @@ function viewRequirements() {
         </div>
 
         <div class="btn-group">
-          <button class="btn btn-primary" data-route="process">Continue to Process Mapping →</button>
+          <button class="btn btn-primary" data-route="acceptance">Continue to Acceptance Criteria →</button>
           <button class="btn" data-route="stakeholders">← Back to Stakeholders</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function viewAcceptance() {
+  const project = getActiveProject();
+  const criteria = project?.requirements.acceptanceCriteria || [];
+  
+  if (!project) {
+    return `<div class="card"><div class="card-body"><div class="empty-state"><h3>No Active Project</h3><p>Please select or create a project first</p><button class="btn btn-primary" data-route="projects">Go to Projects</button></div></div></div>`;
+  }
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Acceptance Criteria</h2>
+        <p class="card-subtitle">Define testable conditions that must be met for the solution to be accepted</p>
+      </div>
+      <div class="card-body">
+        <div class="input-hint" style="margin-bottom: 20px; padding: 16px; background: var(--bg-tertiary); border-left: 4px solid var(--accent-primary); border-radius: 4px;">
+          <strong>What are Acceptance Criteria?</strong><br/>
+          Specific, testable conditions that define when a feature or deliverable is complete and working as expected. 
+          These are used by developers and QA to build and test the solution.<br/><br/>
+          <strong>Format:</strong> Each criterion should have a clear title and step-by-step process to verify it works.
+        </div>
+        
+        <div id="acceptanceCriteriaList" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Criteria items will be rendered here -->
+        </div>
+        
+        <button type="button" class="btn btn-primary" id="addAcceptanceCriterion" style="margin-top: 16px;">+ Add Acceptance Criterion</button>
+      </div>
+      
+      <div class="card-footer">
+        <div class="btn-group">
+          <button class="btn btn-primary" data-route="process">Continue to Process Mapping →</button>
+          <button class="btn" data-route="requirements">← Back to Requirements</button>
         </div>
       </div>
     </div>
@@ -4125,6 +4187,11 @@ function wireRequirementsPage() {
       saveState();
     });
   });
+}
+
+function wireAcceptancePage() {
+  const project = getActiveProject();
+  if (!project) return;
   
   // Render acceptance criteria
   renderAcceptanceCriteria(project);
@@ -4268,6 +4335,7 @@ function render() {
     case "projects": html = viewProjects(); break;
     case "stakeholders": html = viewStakeholders(); break;
     case "requirements": html = viewRequirements(); break;
+    case "acceptance": html = viewAcceptance(); break;
     case "process": html = viewProcess(); break;
     case "output": html = viewOutput(); break;
     case "library": html = viewLibrary(); break;
@@ -4282,14 +4350,45 @@ function render() {
     case "projects": wireProjectsPage(); break;
     case "stakeholders": wireStakeholdersPage(); break;
     case "requirements": wireRequirementsPage(); break;
+    case "acceptance": wireAcceptancePage(); break;
     case "process": wireProcessPage(); break;
     case "output": wireOutputPage(); break;
   }
 }
 
 /* ============================================
+   THEME MANAGEMENT
+   ============================================ */
+function updateThemeButton(theme) {
+  const icon = document.getElementById('themeIcon');
+  const label = document.getElementById('themeLabel');
+  if (theme === 'light') {
+    if (icon) icon.textContent = '☀️';
+    if (label) label.textContent = 'Dark Mode';
+  } else {
+    if (icon) icon.textContent = '🌙';
+    if (label) label.textContent = 'Light Mode';
+  }
+}
+
+function initializeTheme() {
+  const savedTheme = localStorage.getItem('BAB_THEME') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeButton(savedTheme);
+  
+  document.getElementById('themeToggle')?.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('BAB_THEME', newTheme);
+    updateThemeButton(newTheme);
+  });
+}
+
+/* ============================================
    INIT
    ============================================ */
+initializeTheme();
 render();
 </script>
 
