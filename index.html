@@ -1664,20 +1664,37 @@ function renderStakeholderMapSection(stakeholders) {
   return `
     <div class="card">
       <div class="card-body">
-        <div style="position: relative; background: white; padding: 60px 40px 80px 100px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <div style="position: relative; background: white; padding: 60px 60px 120px 140px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 700px;">
           
           <div class="matrix-title">Stakeholder Map</div>
           
+          <!-- Y-axis label (rotated) -->
           <div class="matrix-labels matrix-label-y">Level of Influence on Project</div>
           
-          <div class="stakeholder-matrix">
+          <!-- Y-axis line and arrow -->
+          <div style="position: absolute; left: 120px; top: 60px; bottom: 100px; width: 2px; background: #374151;"></div>
+          <div style="position: absolute; left: 116px; top: 55px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 10px solid #374151;"></div>
+          
+          <!-- Y-axis labels -->
+          <div style="position: absolute; left: 80px; top: 70px; font-size: 0.75rem; color: #6b7280; font-weight: 600;">High</div>
+          <div style="position: absolute; left: 85px; bottom: 110px; font-size: 0.75rem; color: #6b7280; font-weight: 600;">Low</div>
+          
+          <!-- X-axis line and arrow -->
+          <div style="position: absolute; left: 120px; right: 40px; bottom: 100px; height: 2px; background: #374151;"></div>
+          <div style="position: absolute; right: 35px; bottom: 96px; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 10px solid #374151;"></div>
+          
+          <!-- X-axis labels -->
+          <div style="position: absolute; left: 130px; bottom: 70px; font-size: 0.75rem; color: #6b7280; font-weight: 600;">Low</div>
+          <div style="position: absolute; right: 50px; bottom: 70px; font-size: 0.75rem; color: #6b7280; font-weight: 600;">High</div>
+          
+          <div class="stakeholder-matrix" style="height: 600px; overflow: hidden; position: relative;">
             <!-- Quadrant Labels -->
-            <div class="matrix-corner-label matrix-corner-tl">Maintain</div>
-            <div class="matrix-corner-label matrix-corner-tr">Collaborate With</div>
-            <div class="matrix-corner-label matrix-corner-bl">Monitor</div>
-            <div class="matrix-corner-label matrix-corner-br">Keep Informed</div>
+            <div class="matrix-corner-label matrix-corner-tl" style="top: 20px; left: 20px;">Maintain</div>
+            <div class="matrix-corner-label matrix-corner-tr" style="top: 20px; right: 20px;">Collaborate With</div>
+            <div class="matrix-corner-label matrix-corner-bl" style="bottom: 20px; left: 20px;">Monitor</div>
+            <div class="matrix-corner-label matrix-corner-br" style="bottom: 20px; right: 20px;">Keep Informed</div>
             
-            <!-- Crosshairs -->
+            <!-- Crosshairs (inside matrix, clipped) -->
             <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: #fbbf24; z-index: 1;"></div>
             <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #fbbf24; z-index: 1;"></div>
             
@@ -1724,8 +1741,8 @@ function renderStakeholderMapSection(stakeholders) {
             }).join('')}
           </div>
           
-          <!-- Bottom label outside the matrix -->
-          <div style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">
+          <!-- X-axis label (centered below) -->
+          <div style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); font-size: 0.875rem; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.05em;">
             Impact of Change on Them
           </div>
         </div>
