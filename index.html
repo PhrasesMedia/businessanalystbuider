@@ -1122,7 +1122,8 @@ const DEFAULT_PROJECT = {
     success: "",
     constraints: "",
     assumptions: "",
-    risks: ""
+    risks: "",
+    acceptanceCriteria: [] // Array of {title, steps: []}
   },
   process: {
     asIs: "",
@@ -1485,10 +1486,10 @@ function viewStakeholders() {
           <div class="flex gap-2">
             <button class="btn" id="viewModeCards" style="opacity: 1;">📋 Cards</button>
             <button class="btn" id="viewModeOrgChart" style="opacity: 0.6;">🏢 Org Chart</button>
+            <button class="btn" id="viewModeRegister" style="opacity: 0.6;">📄 Register</button>
+            <button class="btn" id="viewModeMap" style="opacity: 0.6;">🗺️ Map</button>
+            <button class="btn" id="viewModeEngagement" style="opacity: 0.6;">📊 Engagement</button>
             <button class="btn btn-primary" id="addStakeholder">+ Add Stakeholder</button>
-            <button class="btn" id="viewRegister">Stakeholder Register</button>
-            <button class="btn" id="viewMapFromStakeholders">Stakeholder Map</button>
-            <button class="btn" id="viewEngagementAssessment">Engagement Assessment</button>
           </div>
         </div>
       </div>
@@ -1553,6 +1554,297 @@ function viewStakeholders() {
     <!-- Org Chart View -->
     <div id="stakeholderOrgChartView" style="display: none;">
       ${renderOrgChartSection(stakeholders)}
+    </div>
+    
+    <!-- Register View -->
+    <div id="stakeholderRegisterView" style="display: none;">
+      ${renderStakeholderRegisterSection(project, stakeholders)}
+    </div>
+    
+    <!-- Map View -->
+    <div id="stakeholderMapView" style="display: none;">
+      ${renderStakeholderMapSection(stakeholders)}
+    </div>
+    
+    <!-- Engagement Assessment View -->
+    <div id="stakeholderEngagementView" style="display: none;">
+      ${renderEngagementAssessmentSection(project, stakeholders)}
+    </div>
+  `;
+}
+
+function renderStakeholderRegisterSection(project, stakeholders) {
+  if (stakeholders.length === 0) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <div class="empty-state">
+            <h3>No stakeholders to display</h3>
+            <p>Add stakeholders to generate the register</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  return `
+    <div class="card">
+      <div class="card-body" style="padding: 0; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; background: white;">
+          <thead>
+            <tr style="background: linear-gradient(135deg, #5a6c7d 0%, #404e5c 100%);">
+              <th colspan="5" style="padding: 24px; text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: white; font-style: italic; margin-bottom: 8px;">
+                  Stakeholder <span style="background: #d4af37; color: #1f2937; padding: 4px 12px; border-radius: 4px;">REGISTER</span>
+                </div>
+                <div style="color: rgba(255,255,255,0.9); font-size: 0.875rem;">
+                  Project Name: <strong>${escapeHtml(project.name || 'Untitled')}</strong>
+                </div>
+                <div style="color: rgba(255,255,255,0.8); font-size: 0.75rem; margin-top: 4px; font-style: italic;">
+                  This document provides contact information for the key stakeholders for this initiative
+                </div>
+              </th>
+            </tr>
+            <tr style="background: #e5e7eb; border-bottom: 2px solid #d1d5db;">
+              <th style="padding: 12px 16px; text-align: left; font-weight: 700; color: #374151; font-size: 0.875rem;">NAME</th>
+              <th style="padding: 12px 16px; text-align: left; font-weight: 700; color: #374151; font-size: 0.875rem;">ROLE</th>
+              <th style="padding: 12px 16px; text-align: left; font-weight: 700; color: #374151; font-size: 0.875rem;">RESPONSIBILITY</th>
+              <th style="padding: 12px 16px; text-align: center; font-weight: 700; color: #374151; font-size: 0.875rem;">STAKEHOLDER INFLUENCE (1-10)</th>
+              <th style="padding: 12px 16px; text-align: center; font-weight: 700; color: #374151; font-size: 0.875rem;">PROJECT IMPACT ON STAKEHOLDER (1-10)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${stakeholders.map((s, index) => {
+              const cat = STAKEHOLDER_CATEGORIES.find(c => c.id === s.category);
+              const responsibility = s.notes || (cat ? `${cat.label} responsibilities and oversight` : 'Project stakeholder');
+              const influenceScore = Math.round(s.influence / 10);
+              const impactScore = Math.round(s.impact / 10);
+              const isHighlighted = index >= stakeholders.length - 3;
+              
+              return `
+                <tr style="border-bottom: 1px solid #e5e7eb; ${isHighlighted ? 'background: #fef9c3;' : ''}">
+                  <td style="padding: 12px 16px; font-weight: 600; color: #1f2937;">${escapeHtml(s.name)}</td>
+                  <td style="padding: 12px 16px; color: #6b7280; font-size: 0.875rem;">${escapeHtml(s.role)}</td>
+                  <td style="padding: 12px 16px; color: #374151; font-size: 0.875rem;">${escapeHtml(responsibility)}</td>
+                  <td style="padding: 12px 16px; text-align: center; font-weight: 600; color: #1f2937;">${influenceScore}</td>
+                  <td style="padding: 12px 16px; text-align: center; font-weight: 600; color: #1f2937;">${impactScore}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+        <div style="padding: 16px; background: #f9fafb; border-top: 2px solid #e5e7eb; font-size: 0.75rem; color: #6b7280; font-style: italic;">
+          Note: Stakeholder Influence and Project Impact are rated on a scale of 1-10, where 1 is low and 10 is high.
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="btn-group">
+          <button class="btn btn-primary" id="downloadRegisterInline">Download Register</button>
+          <button class="btn" id="copyRegisterInline">Copy to Clipboard</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStakeholderMapSection(stakeholders) {
+  if (stakeholders.length === 0) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <div class="empty-state">
+            <h3>No stakeholders to map</h3>
+            <p>Add stakeholders with influence and impact values to see the map</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  return `
+    <div class="card">
+      <div class="card-body">
+        <div style="position: relative; background: white; padding: 60px 40px 80px 100px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+          
+          <div class="matrix-title">Stakeholder Map</div>
+          
+          <div class="matrix-labels matrix-label-y">Level of Influence on Project</div>
+          
+          <div class="stakeholder-matrix">
+            <!-- Quadrant Labels -->
+            <div class="matrix-corner-label matrix-corner-tl">Maintain</div>
+            <div class="matrix-corner-label matrix-corner-tr">Collaborate With</div>
+            <div class="matrix-corner-label matrix-corner-bl">Monitor</div>
+            <div class="matrix-corner-label matrix-corner-br">Keep Informed</div>
+            
+            <!-- Crosshairs -->
+            <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: #fbbf24; z-index: 1;"></div>
+            <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #fbbf24; z-index: 1;"></div>
+            
+            <!-- Grid Lines -->
+            ${[10, 20, 30, 40, 60, 70, 80, 90].map(pct => `
+              <div style="position: absolute; top: ${100 - pct}%; left: 0; right: 0; height: 1px; background: rgba(0,0,0,0.05);"></div>
+              <div style="position: absolute; left: ${pct}%; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.05);"></div>
+            `).join('')}
+            
+            <!-- Stakeholder Markers -->
+            ${stakeholders.map(s => {
+              const cat = STAKEHOLDER_CATEGORIES.find(c => c.id === s.category);
+              const color = cat ? cat.color : '#6b7280';
+              const initials = s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+              
+              return `
+                <div class="stakeholder-marker" 
+                     data-stakeholder-id="${s.id}"
+                     style="
+                       position: absolute;
+                       left: ${s.impact}%;
+                       bottom: ${s.influence}%;
+                       transform: translate(-50%, 50%);
+                       width: 48px;
+                       height: 48px;
+                       background: ${color};
+                       border-radius: 50%;
+                       display: flex;
+                       align-items: center;
+                       justify-content: center;
+                       color: white;
+                       font-weight: 700;
+                       font-size: 0.875rem;
+                       cursor: pointer;
+                       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                       z-index: 10;
+                       transition: transform 0.2s, box-shadow 0.2s;
+                     "
+                     title="${escapeHtml(s.name)}"
+                     onmouseover="this.style.transform='translate(-50%, 50%) scale(1.1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)';"
+                     onmouseout="this.style.transform='translate(-50%, 50%) scale(1)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)';"
+                >${initials}</div>
+              `;
+            }).join('')}
+          </div>
+          
+          <!-- Bottom label outside the matrix -->
+          <div style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">
+            Impact of Change on Them
+          </div>
+        </div>
+        
+        <!-- Legend -->
+        <div style="margin-top: 24px; padding: 20px; background: var(--bg-tertiary); border-radius: 8px;">
+          <h3 style="margin: 0 0 16px; font-size: 1rem;">Stakeholder Legend</h3>
+          <div class="grid grid-4">
+            ${stakeholders.map(s => {
+              const cat = STAKEHOLDER_CATEGORIES.find(c => c.id === s.category);
+              const color = cat ? cat.color : '#6b7280';
+              const initials = s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+              
+              return `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="width: 24px; height: 24px; background: ${color}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.625rem;">${initials}</div>
+                  <span style="font-size: 0.875rem;">${escapeHtml(s.name)}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+        
+        <!-- Strategy Guide -->
+        <div style="margin-top: 16px; padding: 16px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--accent-primary);">
+          <h4 style="margin: 0 0 12px; font-size: 0.9375rem;">Engagement Strategy Guide</h4>
+          <div class="grid grid-2">
+            <div><strong>Collaborate With</strong> (High Influence, High Impact): Active partnership and regular engagement</div>
+            <div><strong>Keep Informed</strong> (Low Influence, High Impact): Regular updates on progress and changes</div>
+            <div><strong>Maintain</strong> (High Influence, Low Impact): Keep satisfied with minimal effort</div>
+            <div><strong>Monitor</strong> (Low Influence, Low Impact): Periodic check-ins, minimal resources</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderEngagementAssessmentSection(project, stakeholders) {
+  if (stakeholders.length === 0) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <div class="empty-state">
+            <h3>No stakeholders to assess</h3>
+            <p>Add stakeholders with engagement levels to generate the assessment</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  return `
+    <div class="card">
+      <div class="card-body" style="padding: 0; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; background: white;">
+          <thead>
+            <tr style="background: linear-gradient(135deg, #5a6c7d 0%, #404e5c 100%);">
+              <th colspan="6" style="padding: 24px; text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: white; font-style: italic; margin-bottom: 8px;">
+                  Stakeholder Engagement Assessment
+                </div>
+                <div style="color: rgba(255,255,255,0.9); font-size: 0.875rem;">
+                  Project Name: <strong>${escapeHtml(project.name || 'Untitled')}</strong>
+                </div>
+                <div style="color: rgba(255,255,255,0.8); font-size: 0.75rem; margin-top: 4px; font-style: italic;">
+                  Current state · Desired state<br/>Place a C and D in a row for each stakeholder
+                </div>
+              </th>
+            </tr>
+            <tr style="background: #e5e7eb; border-bottom: 2px solid #d1d5db;">
+              <th style="padding: 12px 16px; text-align: left; font-weight: 700; color: #374151; font-size: 0.875rem; text-transform: uppercase;">Stakeholders</th>
+              ${ENGAGEMENT_LEVELS.map(level => `
+                <th style="padding: 12px 16px; text-align: center; font-weight: 700; color: #374151; font-size: 0.875rem; text-transform: uppercase;">${level.label}</th>
+              `).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${stakeholders.map(s => {
+              const cat = STAKEHOLDER_CATEGORIES.find(c => c.id === s.category);
+              
+              return `
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 12px 16px; background: #fef3c7; font-weight: 600; color: #1f2937;">
+                    ${escapeHtml(s.name)}
+                    <span style="color: #6b7280; font-size: 0.75rem; font-weight: 400; margin-left: 8px;">(${cat ? cat.label : 'Other'})</span>
+                  </td>
+                  ${ENGAGEMENT_LEVELS.map(level => {
+                    const isCurrent = s.engagement === level.id;
+                    const isDesired = (s.desiredEngagement || 'supportive') === level.id;
+                    
+                    return `
+                      <td style="padding: 12px 16px; text-align: center;">
+                        ${isCurrent ? '<div style="width: 24px; height: 24px; margin: 0 auto; border-radius: 50%; background: #93c5fd; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem;">C</div>' : ''}
+                        ${isDesired ? '<div style="width: 24px; height: 24px; margin: 0 auto; border-radius: 50%; background: #bfdbfe; border: 2px solid #3b82f6; color: #1e40af; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem;">D</div>' : ''}
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+        <div style="padding: 16px; background: #f9fafb; border-top: 2px solid #e5e7eb;">
+          <div style="display: flex; gap: 24px; justify-content: center;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: #374151;">
+              <div style="width: 24px; height: 24px; border-radius: 50%; background: #93c5fd; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem;">C</div>
+              <span>Current State</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: #374151;">
+              <div style="width: 24px; height: 24px; border-radius: 50%; background: #bfdbfe; border: 2px solid #3b82f6; color: #1e40af; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem;">D</div>
+              <span>Desired State</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <button class="btn btn-primary" id="downloadEngagementInline">Download Assessment</button>
+      </div>
     </div>
   `;
 }
@@ -1913,6 +2205,17 @@ function viewRequirements() {
             <textarea class="input" id="reqSuccess" placeholder="How will we measure success?">${escapeHtml(r.success)}</textarea>
             <div class="input-hint">Leading and lagging indicators</div>
           </div>
+          
+          <div class="form-group">
+            <label>Acceptance Criteria</label>
+            <div class="input-hint" style="margin-bottom: 12px;">Define testable conditions with clear steps to reach the desired outcome</div>
+            
+            <div id="acceptanceCriteriaList" style="display: flex; flex-direction: column; gap: 16px;">
+              <!-- Criteria items will be rendered here -->
+            </div>
+            
+            <button type="button" class="btn btn-sm" id="addAcceptanceCriterion" style="margin-top: 12px;">+ Add Acceptance Criterion</button>
+          </div>
 
           <div class="form-group">
             <label>Constraints</label>
@@ -2125,6 +2428,25 @@ function generateOutput() {
       lines.push("Success Measures:");
       r.success.split('\n').filter(Boolean).forEach(line => lines.push(`  • ${line}`));
       lines.push("");
+    }
+    if (r.acceptanceCriteria) {
+      if (Array.isArray(r.acceptanceCriteria) && r.acceptanceCriteria.length > 0) {
+        lines.push("Acceptance Criteria:");
+        r.acceptanceCriteria.forEach((criterion, index) => {
+          lines.push(`  ${index + 1}. ${criterion.title || 'Untitled Criterion'}`);
+          if (criterion.steps && criterion.steps.length > 0) {
+            criterion.steps.forEach((step, stepIndex) => {
+              if (step) lines.push(`     ${String.fromCharCode(97 + stepIndex)}. ${step}`);
+            });
+          }
+          lines.push("");
+        });
+      } else if (typeof r.acceptanceCriteria === 'string' && r.acceptanceCriteria) {
+        // Backwards compatibility for old string format
+        lines.push("Acceptance Criteria:");
+        lines.push(r.acceptanceCriteria);
+        lines.push("");
+      }
     }
     if (r.constraints) {
       lines.push("Constraints:");
@@ -2944,6 +3266,19 @@ function wireOrgChartPage() {
     toast("Org chart exported");
   });
   
+  // Org chart hierarchy/category toggles
+  document.getElementById("toggleOrgView")?.addEventListener("click", () => {
+    document.getElementById("hierarchyView").style.display = "block";
+    document.getElementById("categoryView").style.display = "none";
+    toast("Showing hierarchy view");
+  });
+  
+  document.getElementById("toggleCategoryView")?.addEventListener("click", () => {
+    document.getElementById("hierarchyView").style.display = "none";
+    document.getElementById("categoryView").style.display = "block";
+    toast("Showing category view");
+  });
+  
   // Click on org nodes to edit
   document.querySelectorAll(".org-node").forEach(node => {
     node.addEventListener("click", () => {
@@ -2952,6 +3287,85 @@ function wireOrgChartPage() {
       const s = project?.stakeholders.find(sh => sh.id === id);
       if (s) openStakeholderModal(s);
     });
+  });
+}
+
+function wireRegisterButtons() {
+  document.getElementById("downloadRegisterInline")?.addEventListener("click", () => {
+    const text = generateRegisterText();
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const project = getActiveProject();
+    a.download = `stakeholder-register-${project?.name || 'project'}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Register downloaded");
+  });
+  
+  document.getElementById("copyRegisterInline")?.addEventListener("click", () => {
+    const text = generateRegisterText();
+    navigator.clipboard.writeText(text).then(() => {
+      toast("Register copied to clipboard");
+    }).catch(() => {
+      toast("Failed to copy to clipboard");
+    });
+  });
+}
+
+function wireMapButtons() {
+  // Click on stakeholder markers to edit
+  document.querySelectorAll(".stakeholder-marker").forEach(marker => {
+    marker.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = marker.dataset.stakeholderId;
+      const project = getActiveProject();
+      const s = project?.stakeholders.find(sh => sh.id === id);
+      if (s) openStakeholderModal(s);
+    });
+  });
+}
+
+function wireEngagementButtons() {
+  document.getElementById("downloadEngagementInline")?.addEventListener("click", () => {
+    const project = getActiveProject();
+    const stakeholders = project?.stakeholders || [];
+    
+    const lines = [];
+    lines.push("STAKEHOLDER ENGAGEMENT ASSESSMENT");
+    lines.push("=".repeat(80));
+    lines.push(`Project: ${project.name || 'Untitled'}`);
+    lines.push("");
+    lines.push("Current State (C) → Desired State (D)");
+    lines.push("-".repeat(80));
+    lines.push("");
+    
+    stakeholders.forEach(s => {
+      const currentLabel = ENGAGEMENT_LEVELS.find(e => e.id === s.engagement)?.label || 'Unknown';
+      const desiredLabel = ENGAGEMENT_LEVELS.find(e => e.id === (s.desiredEngagement || 'supportive'))?.label || 'Supportive';
+      const cat = STAKEHOLDER_CATEGORIES.find(c => c.id === s.category);
+      
+      lines.push(`${s.name} (${cat ? cat.label : 'Other'})`);
+      lines.push(`  Current:  ${currentLabel}`);
+      lines.push(`  Desired:  ${desiredLabel}`);
+      if (s.engagement !== s.desiredEngagement) {
+        lines.push(`  Action:   Move from ${currentLabel} to ${desiredLabel}`);
+      } else {
+        lines.push(`  Action:   Maintain at ${currentLabel}`);
+      }
+      lines.push("");
+    });
+    
+    const text = lines.join('\n');
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `engagement-assessment-${project.name || 'project'}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Assessment downloaded");
   });
 }
 
@@ -3042,47 +3456,39 @@ function wireStakeholdersPage() {
     openStakeholderModal();
   });
   
-  document.getElementById("viewMapFromStakeholders")?.addEventListener("click", () => {
-    openInfluenceImpactMatrix();
-  });
-  
-  document.getElementById("viewRegister")?.addEventListener("click", () => {
-    openStakeholderRegister();
-  });
-  
-  document.getElementById("viewEngagementAssessment")?.addEventListener("click", () => {
-    openEngagementAssessment();
-  });
-  
   // View mode toggles
-  document.getElementById("viewModeCards")?.addEventListener("click", () => {
-    document.getElementById("stakeholderCardsView").style.display = "block";
-    document.getElementById("stakeholderOrgChartView").style.display = "none";
-    document.getElementById("viewModeCards").style.opacity = "1";
-    document.getElementById("viewModeOrgChart").style.opacity = "0.6";
-  });
+  const viewModes = ['Cards', 'OrgChart', 'Register', 'Map', 'Engagement'];
   
-  document.getElementById("viewModeOrgChart")?.addEventListener("click", () => {
-    document.getElementById("stakeholderCardsView").style.display = "none";
-    document.getElementById("stakeholderOrgChartView").style.display = "block";
-    document.getElementById("viewModeCards").style.opacity = "0.6";
-    document.getElementById("viewModeOrgChart").style.opacity = "1";
-    
-    // Wire org chart buttons
-    wireOrgChartButtons();
-  });
-  
-  // Org chart hierarchy/category toggles
-  document.getElementById("toggleOrgView")?.addEventListener("click", () => {
-    document.getElementById("hierarchyView").style.display = "block";
-    document.getElementById("categoryView").style.display = "none";
-    toast("Showing hierarchy view");
-  });
-  
-  document.getElementById("toggleCategoryView")?.addEventListener("click", () => {
-    document.getElementById("hierarchyView").style.display = "none";
-    document.getElementById("categoryView").style.display = "block";
-    toast("Showing category view");
+  viewModes.forEach(mode => {
+    document.getElementById(`viewMode${mode}`)?.addEventListener("click", () => {
+      // Hide all views
+      document.getElementById("stakeholderCardsView").style.display = "none";
+      document.getElementById("stakeholderOrgChartView").style.display = "none";
+      document.getElementById("stakeholderRegisterView").style.display = "none";
+      document.getElementById("stakeholderMapView").style.display = "none";
+      document.getElementById("stakeholderEngagementView").style.display = "none";
+      
+      // Reset all button opacities
+      viewModes.forEach(m => {
+        const btn = document.getElementById(`viewMode${m}`);
+        if (btn) btn.style.opacity = "0.6";
+      });
+      
+      // Show selected view and highlight button
+      document.getElementById(`stakeholder${mode}View`).style.display = "block";
+      document.getElementById(`viewMode${mode}`).style.opacity = "1";
+      
+      // Wire specific view buttons
+      if (mode === 'OrgChart') {
+        wireOrgChartButtons();
+      } else if (mode === 'Register') {
+        wireRegisterButtons();
+      } else if (mode === 'Map') {
+        wireMapButtons();
+      } else if (mode === 'Engagement') {
+        wireEngagementButtons();
+      }
+    });
   });
 
   document.querySelectorAll("[data-edit-stakeholder]").forEach(btn => {
@@ -3314,6 +3720,47 @@ function loadSampleData() {
     inScope: "Online booking and scheduling system\nMobile-responsive customer portal\nAutomated appointment reminders (SMS/email)\nDigital payment processing\nPet health records management\nReal-time availability calendar\nCustomer communication hub",
     outScope: "Physical clinic infrastructure changes\nVeterinary inventory management system\nPayroll and HR systems\nThird-party pet insurance integrations (Phase 2)\nAdvanced AI diagnostics (future roadmap)",
     success: "Customer satisfaction score increase from 3.2 to 4.5+ (monthly survey)\nBooking completion rate >85% (currently 62%)\nMobile traffic conversion rate >70% (currently 28%)\nAverage task completion time reduced by 40%\nOperational cost reduction of 25% within 6 months\nSystem uptime >99.5%",
+    acceptanceCriteria: [
+      {
+        title: "Customer can book an appointment on mobile",
+        steps: [
+          "Customer opens the mobile app or website",
+          "Customer selects desired service and date/time",
+          "System confirms booking within 3 clicks",
+          "Entire process completes in under 60 seconds",
+          "Customer receives confirmation SMS immediately"
+        ]
+      },
+      {
+        title: "Automated appointment reminders are sent",
+        steps: [
+          "System checks for appointments 24 hours in advance",
+          "SMS reminder is automatically sent to customer",
+          "Reminder includes appointment details and cancellation link",
+          "Delivery confirmed within 5 minutes of trigger time"
+        ]
+      },
+      {
+        title: "Customer can pay digitally at checkout",
+        steps: [
+          "Customer completes their appointment",
+          "Staff initiates checkout in the system",
+          "Customer selects payment method (card/digital wallet)",
+          "Payment processes successfully",
+          "Digital receipt sent to customer email within 2 minutes"
+        ]
+      },
+      {
+        title: "Staff can access pet health records quickly",
+        steps: [
+          "Staff member searches by pet name or owner name",
+          "System returns matching results",
+          "Staff selects the correct pet record",
+          "Complete health history loads in under 2 seconds",
+          "Records display vaccination dates, visit notes, and prescriptions"
+        ]
+      }
+    ],
     constraints: "Budget cap of $500K for Phase 1\nMust integrate with existing Salesforce CRM\nLaunch required before peak season (Q4 2026)\nMust comply with veterinary data privacy regulations\nLimited to 3 full-time developers on the team\nNo disruption to current operations during rollout",
     assumptions: "Current Salesforce CRM will remain the system of record\nPet owners have smartphones and basic digital literacy\nExisting staff will adopt new system with 2 weeks training\nThird-party payment gateway (Stripe) will meet requirements\nCloud hosting costs will not exceed $2K/month\nCustomer base will grow 20% annually",
     risks: "Integration complexity with legacy Salesforce (High) - Mitigation: Early technical spike\nStaff resistance to new workflows (Medium) - Mitigation: Early involvement + training\nScope creep from stakeholders (Medium) - Mitigation: Strict change control process\nVendor delays on payment gateway API (Low) - Mitigation: Backup provider identified\nRegulatory compliance changes (Low) - Mitigation: Legal review at each milestone"
@@ -3497,6 +3944,125 @@ function wireHomePage() {
   });
 }
 
+function renderAcceptanceCriteria(project) {
+  const criteria = project.requirements.acceptanceCriteria || [];
+  const container = document.getElementById("acceptanceCriteriaList");
+  
+  if (!container) return;
+  
+  if (criteria.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 20px; text-align: center; background: var(--bg-tertiary); border-radius: 8px; color: var(--text-muted);">
+        No acceptance criteria defined yet. Click "+ Add Acceptance Criterion" to create one.
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = criteria.map((criterion, index) => `
+    <div class="card" style="background: var(--bg-tertiary); padding: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+        <input 
+          type="text" 
+          class="input" 
+          placeholder="Criterion title (e.g., 'User can book an appointment')" 
+          value="${escapeHtml(criterion.title || '')}"
+          data-criterion-index="${index}"
+          data-field="title"
+          style="flex: 1; margin-right: 12px;"
+        />
+        <button class="btn btn-sm btn-danger" data-delete-criterion="${index}">Delete</button>
+      </div>
+      
+      <div style="margin-left: 16px;">
+        <label style="font-size: 0.875rem; font-weight: 600; margin-bottom: 8px; display: block;">Steps to achieve:</label>
+        <div id="criterionSteps${index}" style="display: flex; flex-direction: column; gap: 8px;">
+          ${(criterion.steps || []).map((step, stepIndex) => `
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span style="color: var(--text-muted); font-weight: 600; min-width: 24px;">${stepIndex + 1}.</span>
+              <input 
+                type="text" 
+                class="input" 
+                placeholder="Describe this step" 
+                value="${escapeHtml(step)}"
+                data-criterion-index="${index}"
+                data-step-index="${stepIndex}"
+                style="flex: 1;"
+              />
+              <button class="btn btn-sm" data-delete-step="${index}-${stepIndex}" style="padding: 4px 8px;">×</button>
+            </div>
+          `).join('')}
+        </div>
+        <button class="btn btn-sm" data-add-step="${index}" style="margin-top: 8px;">+ Add Step</button>
+      </div>
+    </div>
+  `).join('');
+  
+  // Wire up events
+  wireAcceptanceCriteriaEvents(project);
+}
+
+function wireAcceptanceCriteriaEvents(project) {
+  // Criterion title change
+  document.querySelectorAll('[data-criterion-index][data-field="title"]').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const index = parseInt(e.target.dataset.criterionIndex);
+      if (!project.requirements.acceptanceCriteria[index]) {
+        project.requirements.acceptanceCriteria[index] = { title: '', steps: [] };
+      }
+      project.requirements.acceptanceCriteria[index].title = e.target.value;
+      saveState();
+    });
+  });
+  
+  // Step change
+  document.querySelectorAll('[data-step-index]').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const criterionIndex = parseInt(e.target.dataset.criterionIndex);
+      const stepIndex = parseInt(e.target.dataset.stepIndex);
+      if (project.requirements.acceptanceCriteria[criterionIndex]) {
+        project.requirements.acceptanceCriteria[criterionIndex].steps[stepIndex] = e.target.value;
+        saveState();
+      }
+    });
+  });
+  
+  // Delete criterion
+  document.querySelectorAll('[data-delete-criterion]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const index = parseInt(e.target.dataset.deleteCriterion);
+      if (confirm('Delete this acceptance criterion?')) {
+        project.requirements.acceptanceCriteria.splice(index, 1);
+        saveState();
+        renderAcceptanceCriteria(project);
+      }
+    });
+  });
+  
+  // Add step
+  document.querySelectorAll('[data-add-step]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const index = parseInt(e.target.dataset.addStep);
+      if (!project.requirements.acceptanceCriteria[index].steps) {
+        project.requirements.acceptanceCriteria[index].steps = [];
+      }
+      project.requirements.acceptanceCriteria[index].steps.push('');
+      saveState();
+      renderAcceptanceCriteria(project);
+    });
+  });
+  
+  // Delete step
+  document.querySelectorAll('[data-delete-step]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const [criterionIndex, stepIndex] = e.target.dataset.deleteStep.split('-').map(Number);
+      project.requirements.acceptanceCriteria[criterionIndex].steps.splice(stepIndex, 1);
+      saveState();
+      renderAcceptanceCriteria(project);
+    });
+  });
+}
+
 function wireRequirementsPage() {
   const project = getActiveProject();
   if (!project) return;
@@ -3518,6 +4084,22 @@ function wireRequirementsPage() {
       project.requirements[key] = el.value;
       saveState();
     });
+  });
+  
+  // Render acceptance criteria
+  renderAcceptanceCriteria(project);
+  
+  // Add acceptance criterion button
+  document.getElementById('addAcceptanceCriterion')?.addEventListener('click', () => {
+    if (!project.requirements.acceptanceCriteria) {
+      project.requirements.acceptanceCriteria = [];
+    }
+    project.requirements.acceptanceCriteria.push({
+      title: '',
+      steps: ['']
+    });
+    saveState();
+    renderAcceptanceCriteria(project);
   });
 }
 
