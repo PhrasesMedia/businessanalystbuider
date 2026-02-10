@@ -1155,6 +1155,7 @@ const DEFAULT_PROJECT = {
     inScope: "",
     outScope: "",
     success: "",
+    moscowPrioritization: [], // Array of {name, benefit, cost}
     constraints: "",
     assumptions: "",
     risks: "",
@@ -2256,6 +2257,52 @@ function viewRequirements() {
             <textarea class="input" id="reqSuccess" placeholder="How will we measure success?">${escapeHtml(r.success)}</textarea>
             <div class="input-hint">Leading and lagging indicators</div>
           </div>
+          
+          <div class="form-group">
+            <label>MoSCoW Prioritization</label>
+            <div class="input-hint" style="margin-bottom: 12px;">Plot requirements by Value (benefit) vs Cost (effort)</div>
+            
+            <div id="moscowChart" style="position: relative; background: white; padding: 40px 40px 60px 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 500px;">
+              <!-- Y-axis label -->
+              <div style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%) rotate(-90deg); font-size: 0.875rem; font-weight: 600; color: #6b7280; white-space: nowrap;">Benefit (or Value)</div>
+              
+              <!-- X-axis label -->
+              <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 0.875rem; font-weight: 600; color: #6b7280;">Cost (or Effort)</div>
+              
+              <!-- Chart grid -->
+              <div style="position: relative; width: 100%; height: 400px; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                
+                <!-- Quadrants -->
+                <div style="position: absolute; top: 0; left: 0; width: 50%; height: 50%; background: #bfdbfe; opacity: 0.4;"></div>
+                <div style="position: absolute; top: 0; right: 0; width: 50%; height: 50%; background: #d9f99d; opacity: 0.4;"></div>
+                <div style="position: absolute; bottom: 0; left: 0; width: 50%; height: 50%; background: #fef08a; opacity: 0.4;"></div>
+                <div style="position: absolute; bottom: 0; right: 0; width: 50%; height: 50%; background: #fecaca; opacity: 0.4;"></div>
+                
+                <!-- Quadrant labels -->
+                <div style="position: absolute; top: 10px; left: 10px; font-weight: 600; color: #1e40af; font-size: 0.875rem;">Must Have</div>
+                <div style="position: absolute; top: 10px; right: 10px; font-weight: 600; color: #65a30d; font-size: 0.875rem;">Should Have</div>
+                <div style="position: absolute; bottom: 10px; left: 10px; font-weight: 600; color: #ca8a04; font-size: 0.875rem;">Could Have</div>
+                <div style="position: absolute; bottom: 10px; right: 10px; font-weight: 600; color: #dc2626; font-size: 0.875rem;">Won't Have</div>
+                
+                <!-- Y-axis scale -->
+                <div style="position: absolute; left: -30px; top: 0; font-size: 0.75rem; color: #9ca3af;">10</div>
+                <div style="position: absolute; left: -30px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: #9ca3af;">5</div>
+                <div style="position: absolute; left: -30px; bottom: 0; font-size: 0.75rem; color: #9ca3af;">0</div>
+                
+                <!-- X-axis scale -->
+                <div style="position: absolute; bottom: -25px; left: 0; font-size: 0.75rem; color: #9ca3af;">0</div>
+                <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; color: #9ca3af;">5</div>
+                <div style="position: absolute; bottom: -25px; right: 0; font-size: 0.75rem; color: #9ca3af;">10</div>
+                
+                <!-- Items container -->
+                <div id="moscowItems">
+                  <!-- Items will be rendered here -->
+                </div>
+              </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary" id="addMoscowItem" style="margin-top: 16px;">+ Add Requirement</button>
+          </div>
 
           <div class="form-group">
             <label>Constraints</label>
@@ -2507,6 +2554,40 @@ function generateOutput() {
       lines.push("Success Measures:");
       r.success.split('\n').filter(Boolean).forEach(line => lines.push(`  • ${line}`));
       lines.push("");
+    }
+    if (r.moscowPrioritization && r.moscowPrioritization.length > 0) {
+      lines.push("MoSCoW Prioritization:");
+      lines.push("");
+      
+      // Group by quadrant
+      const mustHave = r.moscowPrioritization.filter(i => i.benefit > 5 && i.cost <= 5);
+      const shouldHave = r.moscowPrioritization.filter(i => i.benefit > 5 && i.cost > 5);
+      const couldHave = r.moscowPrioritization.filter(i => i.benefit <= 5 && i.cost <= 5);
+      const wontHave = r.moscowPrioritization.filter(i => i.benefit <= 5 && i.cost > 5);
+      
+      if (mustHave.length > 0) {
+        lines.push("  MUST HAVE (High Value, Low Cost):");
+        mustHave.forEach(item => lines.push(`    • ${item.name}`));
+        lines.push("");
+      }
+      
+      if (shouldHave.length > 0) {
+        lines.push("  SHOULD HAVE (High Value, High Cost):");
+        shouldHave.forEach(item => lines.push(`    • ${item.name}`));
+        lines.push("");
+      }
+      
+      if (couldHave.length > 0) {
+        lines.push("  COULD HAVE (Low Value, Low Cost):");
+        couldHave.forEach(item => lines.push(`    • ${item.name}`));
+        lines.push("");
+      }
+      
+      if (wontHave.length > 0) {
+        lines.push("  WON'T HAVE (Low Value, High Cost):");
+        wontHave.forEach(item => lines.push(`    • ${item.name}`));
+        lines.push("");
+      }
     }
     if (r.acceptanceCriteria) {
       if (Array.isArray(r.acceptanceCriteria) && r.acceptanceCriteria.length > 0) {
@@ -3799,6 +3880,19 @@ function loadSampleData() {
     inScope: "Online booking and scheduling system\nMobile-responsive customer portal\nAutomated appointment reminders (SMS/email)\nDigital payment processing\nPet health records management\nReal-time availability calendar\nCustomer communication hub",
     outScope: "Physical clinic infrastructure changes\nVeterinary inventory management system\nPayroll and HR systems\nThird-party pet insurance integrations (Phase 2)\nAdvanced AI diagnostics (future roadmap)",
     success: "Customer satisfaction score increase from 3.2 to 4.5+ (monthly survey)\nBooking completion rate >85% (currently 62%)\nMobile traffic conversion rate >70% (currently 28%)\nAverage task completion time reduced by 40%\nOperational cost reduction of 25% within 6 months\nSystem uptime >99.5%",
+    moscowPrioritization: [
+      { name: "Payment Processing", benefit: 6, cost: 2 },
+      { name: "Booking & Scheduling", benefit: 4, cost: 2 },
+      { name: "Emergency Features", benefit: 8, cost: 1 },
+      { name: "User Profiles", benefit: 9, cost: 4 },
+      { name: "Notifications & Alerts", benefit: 8, cost: 5 },
+      { name: "Pet Care Information", benefit: 7, cost: 3 },
+      { name: "Search & Matchmaking Algorithm", benefit: 3, cost: 4 },
+      { name: "Ratings and Reviews", benefit: 5, cost: 6 },
+      { name: "Communication Tools", benefit: 6, cost: 8 },
+      { name: "Dog-Sitting Add-Ons", benefit: 7, cost: 9 },
+      { name: "Social Features", benefit: 2, cost: 9 }
+    ],
     acceptanceCriteria: [
       {
         title: "User can book an appointment via mobile",
@@ -4165,6 +4259,137 @@ function wireAcceptanceCriteriaEvents(project) {
   });
 }
 
+function renderMoscowChart(project) {
+  const items = project.requirements.moscowPrioritization || [];
+  const container = document.getElementById("moscowItems");
+  
+  if (!container) return;
+  
+  container.innerHTML = items.map((item, index) => {
+    const xPercent = (item.cost / 10) * 100;
+    const yPercent = 100 - ((item.benefit / 10) * 100); // Invert Y axis
+    
+    return `
+      <div class="moscow-item" 
+           data-item-index="${index}"
+           style="
+             position: absolute;
+             left: ${xPercent}%;
+             top: ${yPercent}%;
+             transform: translate(-50%, -50%);
+             background: #1e40af;
+             color: white;
+             padding: 8px 12px;
+             border-radius: 20px;
+             font-size: 0.8125rem;
+             font-weight: 600;
+             cursor: move;
+             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+             white-space: nowrap;
+             z-index: 10;
+             user-select: none;
+           "
+           draggable="false"
+      >
+        ${escapeHtml(item.name || 'Untitled')}
+        <button 
+          class="moscow-delete" 
+          data-delete-moscow="${index}"
+          style="
+            margin-left: 8px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.75rem;
+            line-height: 1;
+            padding: 0;
+          "
+        >×</button>
+      </div>
+    `;
+  }).join('');
+  
+  wireMoscowItems(project);
+}
+
+function wireMoscowItems(project) {
+  const items = document.querySelectorAll('.moscow-item');
+  const chartRect = document.getElementById('moscowChart')?.querySelector('div[style*="height: 400px"]')?.getBoundingClientRect();
+  
+  items.forEach(item => {
+    const index = parseInt(item.dataset.itemIndex);
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+    
+    item.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('moscow-delete')) return;
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = item.getBoundingClientRect();
+      startLeft = rect.left - chartRect.left;
+      startTop = rect.top - chartRect.top;
+      item.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      const newLeft = startLeft + deltaX;
+      const newTop = startTop + deltaY;
+      
+      // Constrain to chart bounds
+      const xPercent = Math.max(0, Math.min(100, (newLeft / chartRect.width) * 100));
+      const yPercent = Math.max(0, Math.min(100, (newTop / chartRect.height) * 100));
+      
+      item.style.left = `${xPercent}%`;
+      item.style.top = `${yPercent}%`;
+    });
+    
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      item.style.cursor = 'move';
+      
+      // Save new position
+      const leftPercent = parseFloat(item.style.left);
+      const topPercent = parseFloat(item.style.top);
+      
+      project.requirements.moscowPrioritization[index].cost = (leftPercent / 100) * 10;
+      project.requirements.moscowPrioritization[index].benefit = ((100 - topPercent) / 100) * 10;
+      
+      saveState();
+    });
+    
+    // Delete button
+    item.querySelector('.moscow-delete')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm('Delete this requirement?')) {
+        project.requirements.moscowPrioritization.splice(index, 1);
+        saveState();
+        renderMoscowChart(project);
+      }
+    });
+    
+    // Double click to edit
+    item.addEventListener('dblclick', () => {
+      const newName = prompt('Edit requirement name:', project.requirements.moscowPrioritization[index].name);
+      if (newName !== null && newName.trim()) {
+        project.requirements.moscowPrioritization[index].name = newName.trim();
+        saveState();
+        renderMoscowChart(project);
+      }
+    });
+  });
+}
+
 function wireRequirementsPage() {
   const project = getActiveProject();
   if (!project) return;
@@ -4186,6 +4411,26 @@ function wireRequirementsPage() {
       project.requirements[key] = el.value;
       saveState();
     });
+  });
+  
+  // Render MoSCoW chart
+  renderMoscowChart(project);
+  
+  // Add MoSCoW item button
+  document.getElementById('addMoscowItem')?.addEventListener('click', () => {
+    const name = prompt('Enter requirement name:');
+    if (name && name.trim()) {
+      if (!project.requirements.moscowPrioritization) {
+        project.requirements.moscowPrioritization = [];
+      }
+      project.requirements.moscowPrioritization.push({
+        name: name.trim(),
+        benefit: 5,
+        cost: 5
+      });
+      saveState();
+      renderMoscowChart(project);
+    }
   });
 }
 
