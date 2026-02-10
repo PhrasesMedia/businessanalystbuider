@@ -49,6 +49,7 @@
 color-scheme: dark;
 }
 
+/* Light Theme */
 [data-theme="light"] {
 --bg-primary: #ffffff;
 --bg-secondary: #f8fafc;
@@ -1087,7 +1088,7 @@ font-size: 1rem;
 <div class="container">
   <header class="header">
     <div class="brand">
-      <div class="logo">B</div>
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAADG0lEQVRYCe2XS2sUQRSFe6aTTBLzICbRqBFFRVxEEHHhC/wB/gBx4V/wDwiCG0VEBDeCCxcKrkQQFBciKCKKj4WKD0QFH4gxMZlJz/S0596eSlPT3TMzGXDlgUN3VVXfc+reW12pTlVWVrHUP4LDqOEE+nAWfViCCmowjAc4jV/YiSbmoIoG3uIxziBPoGbgDFbJ3ij2oQsT+IEqamjhAy7hGJqYhUomvsqzGMMRpCn8xnOchpcwiPANZ9GHNOUdbuJ/9K/TbYz+6jHlMU7/oD+S5zhQME5fEh1wVCd6PrOI9fBrIaUZn+v3p4kOyNaEXzOJWtGvUJrxlV5/K3RA8bN2JlErY2c0k2ZcptcfSBMdkF2BfUYqbg6jeI+vuICdiJN3vkuFcrVQQz8O4BJGMYUYucIp+VKoYxmOYj+i8g2f0YHVSOp6N2VqYQt24RHm4MfxCcfhR1OiPx++xLZlq7EO23ENM3ASebXiKH4iP3rcVEPwzD4fxk2shpfbB6/n8rqBIh1YvPkS3/sD/lheBr9HF7fhUuQ1vI05LAa7X95wG3/g5X7gBOqUP+IW/IQrBf0Q+tGOKPkCVwT3dj9M/4UbeAk/V3dxOaKnl3cJSN+LXTiHbbiMdm7iJ3bCDyD0w9/DdZ2GC+bVedjJNtzH37zAq/mABxjCOqyBZ+YdfII/x+J63I9/+IC34xJw1xuw3rADe+EJ55VX3IrVeIFJuGqQQ7iPCbQTeocv8PnxJW24NXgW4V5s9/M/4hK+T/f+4gTcHt/jlBdXe4QxbEQP/OqLz/8cPMAqxI3XxkW8hPwqvF/0RP/QbtWL8Q7P4c0oO6A/qh7A1ZGn8CP84/UG/CgeQ/kFn/lGxPFzXKmXOEiuhcW5CvcZ4hXchZ/BPmzGEriTe/BG5A+5qPRW4S/hI7xMt6VYfFN+wSu4sXqBqziPBrwlOfiW7A/qQxr5jzl0wDuqP/JPeIy9iFO+4S76ETf3wfG0W7Jy4M0lzcP/gA62RlIq/wB7qXGi0eqBPgAAAABJRU5ErkJggg==" alt="BA Builder" style="width: 32px; height: 32px;" />
       <div class="brand-text">
         <h1>Business Analyst Builder</h1>
         <p id="activeProjectIndicator">Stakeholder mapping, requirements, and delivery artefacts</p>
@@ -1101,8 +1102,8 @@ font-size: 1rem;
       <button class="nav-btn active" data-route="home">Project Outline</button>
       <button class="nav-btn" data-route="stakeholders">Stakeholders</button>
       <button class="nav-btn" data-route="requirements">Requirements</button>
-      <button class="nav-btn" data-route="acceptance">Acceptance Criteria</button>
       <button class="nav-btn" data-route="process">Process</button>
+      <button class="nav-btn" data-route="acceptance">Acceptance Criteria</button>
       <button class="nav-btn" data-route="output">Output</button>
       <button class="nav-btn" data-route="library">Library</button>
     </nav>
@@ -1518,8 +1519,7 @@ function viewStakeholders() {
             <p class="card-subtitle">Identify, map, and track stakeholder engagement</p>
           </div>
           <div class="flex gap-2">
-            <button class="btn" id="viewModeCards" style="opacity: 1;">📋 Cards</button>
-            <button class="btn" id="viewModeOrgChart" style="opacity: 0.6;">🏢 Org Chart</button>
+            <button class="btn" id="viewModeOrgChart" style="opacity: 1;">🏢 Org Chart</button>
             <button class="btn" id="viewModeRegister" style="opacity: 0.6;">📄 Register</button>
             <button class="btn" id="viewModeMap" style="opacity: 0.6;">🗺️ Map</button>
             <button class="btn" id="viewModeEngagement" style="opacity: 0.6;">📊 Engagement</button>
@@ -1529,8 +1529,8 @@ function viewStakeholders() {
       </div>
     </div>
 
-    <!-- Cards View -->
-    <div id="stakeholderCardsView">
+    <!-- Cards View (removed - start with Org Chart) -->
+    <div id="stakeholderCardsView" style="display: none;">
       <div class="grid grid-3">
         <!-- Stakeholder Register -->
         <div class="card" style="grid-column: span 2;">
@@ -1585,8 +1585,8 @@ function viewStakeholders() {
       </div>
     </div>
     
-    <!-- Org Chart View -->
-    <div id="stakeholderOrgChartView" style="display: none;">
+    <!-- Org Chart View (default) -->
+    <div id="stakeholderOrgChartView">
       ${renderOrgChartSection(stakeholders)}
     </div>
     
@@ -2277,7 +2277,7 @@ function viewRequirements() {
         </div>
 
         <div class="btn-group">
-          <button class="btn btn-primary" data-route="acceptance">Continue to Acceptance Criteria →</button>
+          <button class="btn btn-primary" data-route="process">Continue to Process Mapping →</button>
           <button class="btn" data-route="stakeholders">← Back to Stakeholders</button>
         </div>
       </div>
@@ -2316,8 +2316,8 @@ function viewAcceptance() {
       
       <div class="card-footer">
         <div class="btn-group">
-          <button class="btn btn-primary" data-route="process">Continue to Process Mapping →</button>
-          <button class="btn" data-route="requirements">← Back to Requirements</button>
+          <button class="btn btn-primary" data-route="output">Generate Output →</button>
+          <button class="btn" data-route="process">← Back to Process</button>
         </div>
       </div>
     </div>
@@ -2370,7 +2370,7 @@ function viewProcess() {
         </div>
 
         <div class="btn-group">
-          <button class="btn btn-primary" data-route="output">Generate Output →</button>
+          <button class="btn btn-primary" data-route="acceptance">Continue to Acceptance Criteria →</button>
           <button class="btn" data-route="requirements">← Back to Requirements</button>
         </div>
       </div>
@@ -3536,7 +3536,7 @@ function wireStakeholdersPage() {
   });
   
   // View mode toggles
-  const viewModes = ['Cards', 'OrgChart', 'Register', 'Map', 'Engagement'];
+  const viewModes = ['OrgChart', 'Register', 'Map', 'Engagement'];
   
   viewModes.forEach(mode => {
     document.getElementById(`viewMode${mode}`)?.addEventListener("click", () => {
