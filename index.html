@@ -502,7 +502,7 @@ transform: translateX(-50%);
 }
 
 .matrix-label-y {
-left: -45px;
+left: -80px;
 top: 50%;
 transform: translateY(-50%) rotate(-90deg);
 white-space: nowrap;
@@ -1060,13 +1060,13 @@ font-size: 1rem;
       <div class="logo">B</div>
       <div class="brand-text">
         <h1>Business Analyst Builder</h1>
-        <p>Stakeholder mapping, requirements, and delivery artefacts</p>
+        <p id="activeProjectIndicator">Stakeholder mapping, requirements, and delivery artefacts</p>
       </div>
     </div>
     <nav class="nav">
-      <button class="nav-btn active" data-route="home">Home</button>
+      <button class="nav-btn" data-route="projects">Projects</button>
+      <button class="nav-btn active" data-route="home">Project Outline</button>
       <button class="nav-btn" data-route="stakeholders">Stakeholders</button>
-      <button class="nav-btn" data-route="orgchart">Org Chart</button>
       <button class="nav-btn" data-route="requirements">Requirements</button>
       <button class="nav-btn" data-route="process">Process</button>
       <button class="nav-btn" data-route="output">Output</button>
@@ -1101,11 +1101,18 @@ font-size: 1rem;
 const APP_KEY = "BAB_V3_STATE";
 
 const DEFAULT_STATE = {
-  route: "home",
-  project: {
-    name: "",
-    description: ""
-  },
+  route: "projects",
+  projects: [],
+  activeProjectId: null
+};
+
+const DEFAULT_PROJECT = {
+  id: null,
+  name: "",
+  description: "",
+  status: "draft", // draft, active, completed, archived
+  createdDate: null,
+  lastModified: null,
   stakeholders: [],
   requirements: {
     problem: "",
@@ -1131,7 +1138,26 @@ function loadState() {
   try {
     const saved = localStorage.getItem(APP_KEY);
     if (!saved) return structuredClone(DEFAULT_STATE);
-    return { ...structuredClone(DEFAULT_STATE), ...JSON.parse(saved) };
+    const parsed = JSON.parse(saved);
+    
+    // Migration: if old format exists, convert it
+    if (!parsed.projects && (parsed.stakeholders || parsed.requirements)) {
+      const legacyProject = createNewProject();
+      legacyProject.name = parsed.project?.name || "Migrated Project";
+      legacyProject.description = parsed.project?.description || "";
+      legacyProject.stakeholders = parsed.stakeholders || [];
+      legacyProject.requirements = parsed.requirements || DEFAULT_PROJECT.requirements;
+      legacyProject.process = parsed.process || DEFAULT_PROJECT.process;
+      legacyProject.status = "active";
+      
+      return {
+        route: parsed.route || "home",
+        projects: [legacyProject],
+        activeProjectId: legacyProject.id
+      };
+    }
+    
+    return { ...structuredClone(DEFAULT_STATE), ...parsed };
   } catch {
     return structuredClone(DEFAULT_STATE);
   }
@@ -1139,8 +1165,39 @@ function loadState() {
 
 function saveState() {
   try {
+    // Update active project's lastModified
+    if (state.activeProjectId) {
+      const project = state.projects.find(p => p.id === state.activeProjectId);
+      if (project) {
+        project.lastModified = new Date().toISOString();
+      }
+    }
     localStorage.setItem(APP_KEY, JSON.stringify(state));
   } catch {}
+}
+
+function createNewProject() {
+  const project = structuredClone(DEFAULT_PROJECT);
+  project.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+  project.createdDate = new Date().toISOString();
+  project.lastModified = new Date().toISOString();
+  return project;
+}
+
+function getActiveProject() {
+  if (!state.activeProjectId) return null;
+  return state.projects.find(p => p.id === state.activeProjectId) || null;
+}
+
+function setActiveProject(projectId) {
+  state.activeProjectId = projectId;
+  saveState();
+}
+
+// Compatibility helpers for existing code
+function getBuildState() {
+  const project = getActiveProject();
+  return project ? project.requirements : DEFAULT_PROJECT.requirements;
 }
 
 /* ============================================
@@ -1175,6 +1232,7 @@ function createStakeholder() {
     influence: 50, // 0-100
     impact: 50,    // 0-100
     engagement: "neutral",
+    desiredEngagement: "supportive", // Target engagement level
     notes: "",
     contact: "",
     hierarchyLevel: 0, // 0 = top level (exec), 1 = managers, 2 = team members
@@ -1240,26 +1298,46 @@ document.addEventListener("click", (e) => {
    VIEWS
    ============================================ */
 function viewHome() {
+  const project = getActiveProject();
+  const projectName = project?.name || "";
+  const projectDesc = project?.description || "";
+  
   return `
     <div class="grid grid-2">
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">Welcome to BAB</h2>
-          <p class="card-subtitle">Your complete Business Analyst toolkit for stakeholder engagement, requirements gathering, and delivery support.</p>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div>
+              <h2 class="card-title">Welcome to BAB</h2>
+              <p class="card-subtitle">Your complete Business Analyst toolkit for stakeholder engagement, requirements gathering, and delivery support.</p>
+            </div>
+            <button class="btn btn-primary" id="loadSampleData" style="white-space: nowrap;">📋 Load Sample</button>
+          </div>
         </div>
         <div class="card-body">
-          <div class="form-group">
-            <label>Project Name</label>
-            <input type="text" class="input" id="projectName" placeholder="e.g., NOC Escalation Redesign" value="${escapeHtml(state.project.name)}" />
-          </div>
-          <div class="form-group">
-            <label>Project Description</label>
-            <textarea class="input" id="projectDesc" placeholder="Brief overview of the initiative...">${escapeHtml(state.project.description)}</textarea>
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-primary" data-route="stakeholders">Start with Stakeholders →</button>
-            <button class="btn" data-route="requirements">Jump to Requirements</button>
-          </div>
+          ${!project ? `
+            <div class="empty-state" style="padding: 40px 20px;">
+              <h3>No Active Project</h3>
+              <p>Create a new project or load a sample to get started</p>
+              <div class="btn-group" style="justify-content: center;">
+                <button class="btn btn-primary" id="createNewProject">+ Create New Project</button>
+                <button class="btn" id="loadSampleFromEmpty">Load Sample Project</button>
+              </div>
+            </div>
+          ` : `
+            <div class="form-group">
+              <label>Project Name</label>
+              <input type="text" class="input" id="projectName" placeholder="e.g., NOC Escalation Redesign" value="${escapeHtml(projectName)}" />
+            </div>
+            <div class="form-group">
+              <label>Project Description</label>
+              <textarea class="input" id="projectDesc" placeholder="Brief overview of the initiative...">${escapeHtml(projectDesc)}</textarea>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" data-route="stakeholders">Start with Stakeholders →</button>
+              <button class="btn" data-route="requirements">Jump to Requirements</button>
+            </div>
+          `}
         </div>
       </div>
       
@@ -1272,7 +1350,6 @@ function viewHome() {
           <div class="grid gap-4">
             ${[
               { icon: "👥", title: "Stakeholder Management", desc: "Map influence, impact, and engagement levels", route: "stakeholders" },
-              { icon: "📊", title: "Org Chart", desc: "Visual organizational breakdown structure", route: "orgchart" },
               { icon: "📋", title: "Requirements Gathering", desc: "Problem, goals, scope, and success criteria", route: "requirements" },
               { icon: "🔄", title: "Process Mapping", desc: "AS-IS and TO-BE with decision points", route: "process" },
               { icon: "📄", title: "Generate Output", desc: "Copy-ready documentation", route: "output" }
@@ -1289,8 +1366,110 @@ function viewHome() {
   `;
 }
 
+function viewProjects() {
+  const projects = state.projects || [];
+  const activeId = state.activeProjectId;
+  
+  const statusColors = {
+    draft: "muted",
+    active: "primary",
+    completed: "success",
+    archived: "muted"
+  };
+  
+  const statusLabels = {
+    draft: "Draft",
+    active: "Active",
+    completed: "Completed",
+    archived: "Archived"
+  };
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="card-title">My Projects</h2>
+            <p class="card-subtitle">Manage all your BA projects in one place</p>
+          </div>
+          <button class="btn btn-primary" id="createProject">+ New Project</button>
+        </div>
+      </div>
+      <div class="card-body">
+        ${projects.length === 0 ? `
+          <div class="empty-state">
+            <h3>No Projects Yet</h3>
+            <p>Create your first project or load a sample to get started</p>
+            <div class="btn-group" style="justify-content: center;">
+              <button class="btn btn-primary" id="createFirstProject">+ Create Project</button>
+              <button class="btn" id="loadSampleProject">Load Sample</button>
+            </div>
+          </div>
+        ` : `
+          <div style="display: grid; gap: 16px;">
+            ${projects.map(project => {
+              const isActive = project.id === activeId;
+              const stakeholderCount = project.stakeholders?.length || 0;
+              const lastModified = project.lastModified ? new Date(project.lastModified).toLocaleDateString() : "Never";
+              const status = project.status || "draft";
+              
+              // Calculate completion percentage
+              let completionItems = 0;
+              let totalItems = 7;
+              if (project.name) completionItems++;
+              if (project.stakeholders?.length > 0) completionItems++;
+              if (project.requirements?.problem) completionItems++;
+              if (project.requirements?.goal) completionItems++;
+              if (project.requirements?.inScope) completionItems++;
+              if (project.process?.asIs) completionItems++;
+              if (project.process?.toBe) completionItems++;
+              const completionPct = Math.round((completionItems / totalItems) * 100);
+              
+              return `
+                <div class="card" style="background: var(--bg-tertiary); ${isActive ? 'border: 2px solid var(--accent-primary);' : ''}">
+                  <div class="card-body" style="padding: 20px;">
+                    <div class="flex justify-between items-start gap-16px;">
+                      <div style="flex: 1;">
+                        <div class="flex items-center gap-12px mb-2">
+                          <h3 style="margin: 0; font-size: 1.25rem;">${escapeHtml(project.name) || "Untitled Project"}</h3>
+                          ${isActive ? '<span class="badge badge-primary">Current</span>' : ''}
+                          <span class="badge badge-${statusColors[status]}">${statusLabels[status]}</span>
+                        </div>
+                        <p class="text-muted text-sm" style="margin: 0 0 12px;">${escapeHtml(project.description) || "No description"}</p>
+                        <div class="flex gap-4" style="font-size: 0.8125rem; color: var(--text-muted);">
+                          <span>👥 ${stakeholderCount} stakeholder${stakeholderCount !== 1 ? 's' : ''}</span>
+                          <span>📅 Modified ${lastModified}</span>
+                          <span>📊 ${completionPct}% complete</span>
+                        </div>
+                      </div>
+                      <div class="flex gap-2">
+                        ${isActive ? `<button class="btn btn-sm btn-primary" data-route="home">Edit Project</button>` : `<button class="btn btn-sm btn-primary" data-open-project="${project.id}">Open</button>`}
+                        <button class="btn btn-sm" data-clone-project="${project.id}">Clone</button>
+                        <button class="btn btn-sm" data-export-project="${project.id}">Export</button>
+                        <button class="btn btn-sm" data-change-status="${project.id}">
+                          ${status === 'active' ? 'Complete' : status === 'completed' ? 'Archive' : 'Activate'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" data-delete-project="${project.id}">Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
 function viewStakeholders() {
-  const stakeholders = state.stakeholders || [];
+  const project = getActiveProject();
+  const stakeholders = project?.stakeholders || [];
+  
+  if (!project) {
+    return `<div class="card"><div class="card-body"><div class="empty-state"><h3>No Active Project</h3><p>Please select or create a project first</p><button class="btn btn-primary" data-route="projects">Go to Projects</button></div></div></div>`;
+  }
   
   return `
     <div class="card">
@@ -1301,64 +1480,165 @@ function viewStakeholders() {
             <p class="card-subtitle">Identify, map, and track stakeholder engagement</p>
           </div>
           <div class="flex gap-2">
+            <button class="btn" id="viewModeCards" style="opacity: 1;">📋 Cards</button>
+            <button class="btn" id="viewModeOrgChart" style="opacity: 0.6;">🏢 Org Chart</button>
             <button class="btn btn-primary" id="addStakeholder">+ Add Stakeholder</button>
             <button class="btn" id="viewRegister">Stakeholder Register</button>
             <button class="btn" id="viewMapFromStakeholders">Stakeholder Map</button>
+            <button class="btn" id="viewEngagementAssessment">Engagement Assessment</button>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="grid grid-3">
-      <!-- Stakeholder Register -->
-      <div class="card" style="grid-column: span 2;">
-        <div class="card-header">
-          <h3 class="card-title">Stakeholder Register</h3>
-          <p class="card-subtitle">${stakeholders.length} stakeholder${stakeholders.length !== 1 ? 's' : ''} identified</p>
+    <!-- Cards View -->
+    <div id="stakeholderCardsView">
+      <div class="grid grid-3">
+        <!-- Stakeholder Register -->
+        <div class="card" style="grid-column: span 2;">
+          <div class="card-header">
+            <h3 class="card-title">Stakeholder Register</h3>
+            <p class="card-subtitle">${stakeholders.length} stakeholder${stakeholders.length !== 1 ? 's' : ''} identified</p>
+          </div>
+          <div class="card-body">
+            ${stakeholders.length === 0 ? `
+              <div class="empty-state">
+                <h3>No stakeholders yet</h3>
+                <p>Click "Add Stakeholder" to start building your stakeholder register</p>
+              </div>
+            ` : `
+              <div class="stakeholder-grid">
+                ${stakeholders.map(s => renderStakeholderCard(s)).join("")}
+              </div>
+            `}
+          </div>
         </div>
-        <div class="card-body">
-          ${stakeholders.length === 0 ? `
-            <div class="empty-state">
-              <h3>No stakeholders yet</h3>
-              <p>Click "Add Stakeholder" to start building your stakeholder register</p>
+
+        <!-- Quick Stats -->
+        <div>
+          <div class="card mb-4">
+            <div class="card-header">
+              <h3 class="card-title">Engagement Overview</h3>
             </div>
-          ` : `
-            <div class="stakeholder-grid">
-              ${stakeholders.map(s => renderStakeholderCard(s)).join("")}
+            <div class="card-body">
+              ${ENGAGEMENT_LEVELS.map(level => {
+                const count = stakeholders.filter(s => s.engagement === level.id).length;
+                const pct = stakeholders.length > 0 ? Math.round((count / stakeholders.length) * 100) : 0;
+                return `
+                  <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm">${level.label}</span>
+                    <span class="badge badge-${level.color}">${count} (${pct}%)</span>
+                  </div>
+                `;
+              }).join("")}
             </div>
-          `}
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Quick Actions</h3>
+            </div>
+            <div class="card-body">
+              <button class="btn btn-sm" style="width: 100%; margin-bottom: 8px;" id="exportStakeholders">Export Register</button>
+              <button class="btn btn-sm" style="width: 100%;" data-route="requirements">Continue to Requirements →</button>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+    
+    <!-- Org Chart View -->
+    <div id="stakeholderOrgChartView" style="display: none;">
+      ${renderOrgChartSection(stakeholders)}
+    </div>
+  `;
+}
 
-      <!-- Quick Stats -->
-      <div>
-        <div class="card mb-4">
-          <div class="card-header">
-            <h3 class="card-title">Engagement Overview</h3>
+function renderOrgChartSection(stakeholders) {
+  // Organize by hierarchy level and category
+  const byLevel = {};
+  const byCategory = {};
+  
+  stakeholders.forEach(s => {
+    const level = s.hierarchyLevel || 0;
+    if (!byLevel[level]) byLevel[level] = [];
+    byLevel[level].push(s);
+    
+    const cat = s.category || "other";
+    if (!byCategory[cat]) byCategory[cat] = [];
+    byCategory[cat].push(s);
+  });
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="card-title">Organizational Breakdown Structure</h2>
+            <p class="card-subtitle">Visual hierarchy organized by functional categories</p>
           </div>
-          <div class="card-body">
-            ${ENGAGEMENT_LEVELS.map(level => {
-              const count = stakeholders.filter(s => s.engagement === level.id).length;
-              const pct = stakeholders.length > 0 ? Math.round((count / stakeholders.length) * 100) : 0;
-              return `
-                <div class="flex justify-between items-center mb-4">
-                  <span class="text-sm">${level.label}</span>
-                  <span class="badge badge-${level.color}">${count} (${pct}%)</span>
-                </div>
-              `;
-            }).join("")}
+          <div class="flex gap-2">
+            <button class="btn" id="toggleOrgView">By Hierarchy</button>
+            <button class="btn" id="toggleCategoryView">By Category</button>
+            <button class="btn btn-primary" id="exportOrgChart">Export Chart</button>
           </div>
         </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Quick Actions</h3>
+      </div>
+      <div class="card-body">
+        ${stakeholders.length === 0 ? `
+          <div class="empty-state">
+            <h3>No stakeholders to display</h3>
+            <p>Add stakeholders with hierarchy and category information to see the organizational chart</p>
           </div>
-          <div class="card-body">
-            <button class="btn btn-sm" style="width: 100%; margin-bottom: 8px;" id="exportStakeholders">Export Register</button>
-            <button class="btn btn-sm" style="width: 100%;" data-route="requirements">Continue to Requirements →</button>
+        ` : `
+          <!-- Hierarchy View -->
+          <div id="hierarchyView">
+            <div class="org-chart-container">
+              ${renderOrgChartByHierarchy(byLevel)}
+            </div>
           </div>
-        </div>
+          
+          <!-- Category View -->
+          <div id="categoryView" style="display: none;">
+            <div class="org-chart-container">
+              ${renderOrgChartByCategory(byCategory, stakeholders)}
+            </div>
+          </div>
+          
+          <div style="margin-top: 40px;">
+            <h3 style="margin-bottom: 16px;">Category Breakdown</h3>
+            <div class="grid grid-4">
+              ${STAKEHOLDER_CATEGORIES.map(cat => {
+                const members = byCategory[cat.id] || [];
+                if (members.length === 0) return '';
+                
+                return `
+                  <div class="card" style="background: var(--bg-tertiary); border-left: 3px solid ${cat.color};">
+                    <div class="card-header" style="padding: 12px 16px;">
+                      <h4 style="font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+                        <span>${cat.icon}</span>
+                        <span>${cat.label}</span>
+                      </h4>
+                      <p class="text-muted text-sm">${members.length} member${members.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    <div class="card-body" style="padding: 12px 16px;">
+                      ${members.slice(0, 5).map(m => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border);">
+                          <div>
+                            <div style="font-weight: 600; font-size: 0.875rem;">${escapeHtml(m.name)}</div>
+                            <div class="text-muted text-sm">${escapeHtml(m.role)}</div>
+                          </div>
+                          <span class="badge badge-${getEngagementColor(m.engagement)}" style="font-size: 0.65rem; padding: 3px 6px;">${getEngagementLabel(m.engagement)}</span>
+                        </div>
+                      `).join("")}
+                      ${members.length > 5 ? `<div class="text-muted text-sm" style="margin-top: 8px; text-align: center;">+${members.length - 5} more</div>` : ''}
+                    </div>
+                  </div>
+                `;
+              }).filter(Boolean).join("")}
+            </div>
+          </div>
+        `}
       </div>
     </div>
   `;
@@ -1397,7 +1677,12 @@ function renderStakeholderCard(s) {
 }
 
 function viewOrgChart() {
-  const stakeholders = state.stakeholders || [];
+  const project = getActiveProject();
+  const stakeholders = project?.stakeholders || [];
+  
+  if (!project) {
+    return `<div class="card"><div class="card-body"><div class="empty-state"><h3>No Active Project</h3><p>Please select or create a project first</p><button class="btn btn-primary" data-route="projects">Go to Projects</button></div></div></div>`;
+  }
   
   // Organize by hierarchy level and category
   const byLevel = {};
@@ -1581,7 +1866,12 @@ function getEngagementColor(engagementId) {
 }
 
 function viewRequirements() {
-  const r = state.requirements;
+  const project = getActiveProject();
+  const r = project?.requirements || DEFAULT_PROJECT.requirements;
+  
+  if (!project) {
+    return `<div class="card"><div class="card-body"><div class="empty-state"><h3>No Active Project</h3><p>Please select or create a project first</p><button class="btn btn-primary" data-route="projects">Go to Projects</button></div></div></div>`;
+  }
   
   return `
     <div class="card">
@@ -1650,7 +1940,12 @@ function viewRequirements() {
 }
 
 function viewProcess() {
-  const p = state.process;
+  const project = getActiveProject();
+  const p = project?.process || DEFAULT_PROJECT.process;
+  
+  if (!project) {
+    return `<div class="card"><div class="card-body"><div class="empty-state"><h3>No Active Project</h3><p>Please select or create a project first</p><button class="btn btn-primary" data-route="projects">Go to Projects</button></div></div></div>`;
+  }
   
   return `
     <div class="card">
@@ -1764,6 +2059,9 @@ function viewLibrary() {
    OUTPUT GENERATION
    ============================================ */
 function generateOutput() {
+  const project = getActiveProject();
+  if (!project) return "No active project";
+  
   const lines = [];
   
   lines.push("═══════════════════════════════════════════════");
@@ -1771,19 +2069,19 @@ function generateOutput() {
   lines.push("═══════════════════════════════════════════════");
   lines.push("");
   
-  if (state.project.name) {
-    lines.push(`Project: ${state.project.name}`);
-    if (state.project.description) {
-      lines.push(`Description: ${state.project.description}`);
+  if (project.name) {
+    lines.push(`Project: ${project.name}`);
+    if (project.description) {
+      lines.push(`Description: ${project.description}`);
     }
     lines.push("");
   }
 
   // Stakeholders
-  if (state.stakeholders && state.stakeholders.length > 0) {
+  if (project.stakeholders && project.stakeholders.length > 0) {
     lines.push("STAKEHOLDER REGISTER");
     lines.push("─────────────────────────────────────────────");
-    state.stakeholders.forEach(s => {
+    project.stakeholders.forEach(s => {
       lines.push(`• ${s.name || "Unnamed"} (${s.role || "No role"})`);
       if (s.department) lines.push(`  Department: ${s.department}`);
       lines.push(`  Influence: ${s.influence >= 70 ? "High" : s.influence >= 40 ? "Medium" : "Low"}`);
@@ -1796,7 +2094,7 @@ function generateOutput() {
   }
 
   // Requirements
-  const r = state.requirements;
+  const r = project.requirements;
   if (r.problem || r.goal) {
     lines.push("REQUIREMENTS");
     lines.push("─────────────────────────────────────────────");
@@ -1843,7 +2141,7 @@ function generateOutput() {
   }
 
   // Process
-  const p = state.process;
+  const p = project.process;
   if (p.asIs || p.toBe) {
     lines.push("PROCESS MAPPING");
     lines.push("─────────────────────────────────────────────");
@@ -1880,9 +2178,15 @@ function generateOutput() {
    STAKEHOLDER MODAL
    ============================================ */
 function openStakeholderModal(stakeholder = null) {
+  const project = getActiveProject();
+  if (!project) {
+    toast("No active project");
+    return;
+  }
+  
   const isEdit = !!stakeholder;
   const s = stakeholder || createStakeholder();
-  const allStakeholders = state.stakeholders || [];
+  const allStakeholders = project.stakeholders || [];
   const potentialManagers = allStakeholders.filter(sh => sh.id !== s.id && (sh.hierarchyLevel || 0) < (s.hierarchyLevel || 0));
   
   const body = `
@@ -1949,17 +2253,17 @@ function openStakeholderModal(stakeholder = null) {
       <div class="form-group">
         <label>Influence (${s.influence}%)</label>
         <input type="range" class="input" id="modalStakeholderInfluence" min="0" max="100" value="${s.influence}" style="padding: 0; height: 40px;" />
-        <div class="input-hint">Power to approve/block decisions</div>
+        <div class="input-hint">Their power to influence the project</div>
       </div>
       <div class="form-group">
         <label>Impact (${s.impact}%)</label>
         <input type="range" class="input" id="modalStakeholderImpact" min="0" max="100" value="${s.impact}" style="padding: 0; height: 40px;" />
-        <div class="input-hint">Affected by the outcome</div>
+        <div class="input-hint">How much the project affects them</div>
       </div>
     </div>
 
     <div class="form-group">
-      <label>Engagement Level</label>
+      <label>Current Engagement Level</label>
       <div class="engagement-track">
         <div class="engagement-segments">
           ${ENGAGEMENT_LEVELS.map(level => `
@@ -1969,6 +2273,20 @@ function openStakeholderModal(stakeholder = null) {
           `).join("")}
         </div>
       </div>
+    </div>
+    
+    <div class="form-group">
+      <label>Desired Engagement Level</label>
+      <div class="engagement-track">
+        <div class="engagement-segments">
+          ${ENGAGEMENT_LEVELS.map(level => `
+            <div class="engagement-segment ${(s.desiredEngagement || 'supportive') === level.id ? 'active' : ''} engagement-${level.id}" data-desired-engagement="${level.id}">
+              ${level.label}
+            </div>
+          `).join("")}
+        </div>
+      </div>
+      <div class="input-hint">Target engagement level for project success</div>
     </div>
 
     <div class="form-group">
@@ -1989,9 +2307,17 @@ function openStakeholderModal(stakeholder = null) {
   );
 
   // Wire up engagement segments
-  document.querySelectorAll(".engagement-segment").forEach(seg => {
+  document.querySelectorAll("[data-engagement]").forEach(seg => {
     seg.addEventListener("click", () => {
-      document.querySelectorAll(".engagement-segment").forEach(s => s.classList.remove("active"));
+      document.querySelectorAll("[data-engagement]").forEach(s => s.classList.remove("active"));
+      seg.classList.add("active");
+    });
+  });
+  
+  // Wire up desired engagement segments
+  document.querySelectorAll("[data-desired-engagement]").forEach(seg => {
+    seg.addEventListener("click", () => {
+      document.querySelectorAll("[data-desired-engagement]").forEach(s => s.classList.remove("active"));
       seg.classList.add("active");
     });
   });
@@ -2018,7 +2344,8 @@ function openStakeholderModal(stakeholder = null) {
       return;
     }
 
-    const activeEngagement = document.querySelector(".engagement-segment.active");
+    const activeEngagement = document.querySelector("[data-engagement].active");
+    const activeDesiredEngagement = document.querySelector("[data-desired-engagement].active");
     
     s.name = name;
     s.role = role;
@@ -2028,16 +2355,17 @@ function openStakeholderModal(stakeholder = null) {
     s.influence = parseInt(influenceInput.value);
     s.impact = parseInt(impactInput.value);
     s.engagement = activeEngagement ? activeEngagement.dataset.engagement : "neutral";
+    s.desiredEngagement = activeDesiredEngagement ? activeDesiredEngagement.dataset.desiredEngagement : "supportive";
     s.notes = document.getElementById("modalStakeholderNotes").value.trim();
     s.hierarchyLevel = parseInt(document.getElementById("modalStakeholderHierarchy").value);
     s.reportsTo = document.getElementById("modalStakeholderReportsTo").value || null;
 
     if (!isEdit) {
-      if (!state.stakeholders) state.stakeholders = [];
-      state.stakeholders.push(s);
+      if (!project.stakeholders) project.stakeholders = [];
+      project.stakeholders.push(s);
     } else {
-      const idx = state.stakeholders.findIndex(sh => sh.id === s.id);
-      if (idx !== -1) state.stakeholders[idx] = s;
+      const idx = project.stakeholders.findIndex(sh => sh.id === s.id);
+      if (idx !== -1) project.stakeholders[idx] = s;
     }
 
     saveState();
@@ -2048,7 +2376,8 @@ function openStakeholderModal(stakeholder = null) {
 }
 
 function openStakeholderRegister() {
-  const stakeholders = state.stakeholders || [];
+  const project = getActiveProject();
+  const stakeholders = project?.stakeholders || [];
   
   if (stakeholders.length === 0) {
     toast("Add stakeholders first to generate the register");
@@ -2135,7 +2464,8 @@ function openStakeholderRegister() {
 }
 
 function generateRegisterText() {
-  const stakeholders = state.stakeholders || [];
+  const project = getActiveProject();
+  const stakeholders = project?.stakeholders || [];
   const lines = [];
   
   lines.push("STAKEHOLDER REGISTER");
@@ -2171,20 +2501,236 @@ function downloadStakeholderRegister() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `stakeholder-register-${state.project.name || 'project'}.txt`;
+  const project = getActiveProject();
+  a.download = `stakeholder-register-${project?.name || 'project'}.txt`;
   a.click();
   URL.revokeObjectURL(url);
   toast("Register downloaded");
 }
 
+function openEngagementAssessment() {
+  const project = getActiveProject();
+  const stakeholders = project?.stakeholders || [];
+  
+  if (stakeholders.length === 0) {
+    toast("Add stakeholders first");
+    return;
+  }
+  
+  const body = `
+    <style>
+      .assessment-table {
+        width: 100%;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .assessment-header {
+        background: linear-gradient(135deg, #5a6c7d 0%, #404e5c 100%);
+        padding: 24px;
+        text-align: center;
+      }
+      .assessment-title {
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0 0 8px;
+        font-style: italic;
+      }
+      .assessment-project {
+        color: white;
+        margin: 8px 0;
+        font-size: 0.875rem;
+      }
+      .assessment-instructions {
+        color: rgba(255,255,255,0.9);
+        font-size: 0.75rem;
+        margin: 8px 0 0;
+        font-style: italic;
+      }
+      .assessment-grid {
+        display: grid;
+        grid-template-columns: 200px repeat(5, 1fr);
+        background: white;
+      }
+      .assessment-cell {
+        padding: 12px;
+        border: 1px solid #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50px;
+      }
+      .assessment-header-cell {
+        background: #e5e7eb;
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-align: center;
+        color: #374151;
+        text-transform: uppercase;
+      }
+      .assessment-stakeholder-cell {
+        background: #fef3c7;
+        font-weight: 600;
+        justify-content: flex-start;
+        padding-left: 16px;
+        font-size: 0.875rem;
+        color: #1f2937;
+      }
+      .assessment-category {
+        color: #6b7280;
+        font-size: 0.75rem;
+        font-weight: 400;
+        margin-left: 8px;
+      }
+      .assessment-mark {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #93c5fd;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.875rem;
+      }
+      .assessment-mark.current {
+        background: #93c5fd;
+      }
+      .assessment-mark.desired {
+        background: #bfdbfe;
+        border: 2px solid #3b82f6;
+      }
+      .assessment-legend {
+        display: flex;
+        gap: 24px;
+        justify-content: center;
+        padding: 16px;
+        background: #f9fafb;
+        border-top: 2px solid #e5e7eb;
+      }
+      .assessment-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8125rem;
+        color: #374151;
+      }
+    </style>
+    
+    <div class="assessment-table">
+      <div class="assessment-header">
+        <h2 class="assessment-title">Stakeholder Engagement Assessment</h2>
+        <div class="assessment-project">Project Name: <strong>${escapeHtml(project.name || 'Untitled')}</strong></div>
+        <div class="assessment-instructions">Current state · Desired state<br/>Place a C and D in a row for each stakeholder</div>
+      </div>
+      
+      <div class="assessment-grid">
+        <!-- Header Row -->
+        <div class="assessment-cell assessment-header-cell" style="grid-column: 1;">Stakeholders</div>
+        ${ENGAGEMENT_LEVELS.map(level => `
+          <div class="assessment-cell assessment-header-cell">${level.label}</div>
+        `).join("")}
+        
+        <!-- Stakeholder Rows -->
+        ${stakeholders.map(s => {
+          const cat = STAKEHOLDER_CATEGORIES.find(c => c.id === s.category);
+          return `
+            <div class="assessment-cell assessment-stakeholder-cell">
+              ${escapeHtml(s.name)}
+              <span class="assessment-category">(${cat ? cat.label : 'Other'})</span>
+            </div>
+            ${ENGAGEMENT_LEVELS.map(level => {
+              const isCurrent = s.engagement === level.id;
+              const isDesired = (s.desiredEngagement || 'supportive') === level.id;
+              return `
+                <div class="assessment-cell">
+                  ${isCurrent ? '<div class="assessment-mark current">C</div>' : ''}
+                  ${isDesired ? '<div class="assessment-mark desired">D</div>' : ''}
+                </div>
+              `;
+            }).join("")}
+          `;
+        }).join("")}
+      </div>
+      
+      <div class="assessment-legend">
+        <div class="assessment-legend-item">
+          <div class="assessment-mark current">C</div>
+          <span>Current State</span>
+        </div>
+        <div class="assessment-legend-item">
+          <div class="assessment-mark desired">D</div>
+          <span>Desired State</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="btn-group" style="margin-top: 20px;">
+      <button class="btn btn-primary" id="downloadAssessment">Download Assessment</button>
+      <button class="btn" onclick="closeModal()">Close</button>
+    </div>
+  `;
+  
+  openModal("Stakeholder Engagement Assessment", `${stakeholders.length} stakeholders mapped`, body);
+  
+  // Download handler
+  setTimeout(() => {
+    document.getElementById("downloadAssessment")?.addEventListener("click", () => {
+      const lines = [];
+      lines.push("STAKEHOLDER ENGAGEMENT ASSESSMENT");
+      lines.push("=".repeat(80));
+      lines.push(`Project: ${project.name || 'Untitled'}`);
+      lines.push("");
+      lines.push("Current State (C) → Desired State (D)");
+      lines.push("-".repeat(80));
+      lines.push("");
+      
+      stakeholders.forEach(s => {
+        const currentLabel = ENGAGEMENT_LEVELS.find(e => e.id === s.engagement)?.label || 'Unknown';
+        const desiredLabel = ENGAGEMENT_LEVELS.find(e => e.id === (s.desiredEngagement || 'supportive'))?.label || 'Supportive';
+        const cat = STAKEHOLDER_CATEGORIES.find(c => c.id === s.category);
+        
+        lines.push(`${s.name} (${cat ? cat.label : 'Other'})`);
+        lines.push(`  Current:  ${currentLabel}`);
+        lines.push(`  Desired:  ${desiredLabel}`);
+        if (s.engagement !== s.desiredEngagement) {
+          lines.push(`  Action:   Move from ${currentLabel} to ${desiredLabel}`);
+        } else {
+          lines.push(`  Action:   Maintain at ${currentLabel}`);
+        }
+        lines.push("");
+      });
+      
+      const text = lines.join('\n');
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `engagement-assessment-${project.name || 'project'}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("Assessment downloaded");
+    });
+  }, 100);
+}
+
 function openInfluenceImpactMatrix() {
-  const stakeholders = state.stakeholders || [];
+  const project = getActiveProject();
+  const stakeholders = project?.stakeholders || [];
+  
+  if (!project || stakeholders.length === 0) {
+    toast("No stakeholders to map");
+    return;
+  }
   
   const body = `
     <div class="matrix-container">
       <div class="matrix-title">Stakeholder Map</div>
       
-      <div class="matrix-labels matrix-label-y">Level of Influence</div>
+      <div class="matrix-labels matrix-label-y">Level of Influence on Project</div>
       
       <div class="matrix-corner-label matrix-corner-tl">Maintain</div>
       <div class="matrix-corner-label matrix-corner-tr">Collaborate With</div>
@@ -2219,7 +2765,7 @@ function openInfluenceImpactMatrix() {
       
       <!-- Bottom label outside the matrix -->
       <div style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">
-        Impact of Change
+        Impact of Change on Them
       </div>
     </div>
     
@@ -2292,7 +2838,8 @@ function openInfluenceImpactMatrix() {
       marker.addEventListener("click", (e) => {
         e.stopPropagation();
         const id = marker.dataset.stakeholderId;
-        const s = state.stakeholders.find(sh => sh.id === id);
+        const project = getActiveProject();
+        const s = project?.stakeholders.find(sh => sh.id === id);
         if (s) {
           closeModal();
           setTimeout(() => openStakeholderModal(s), 100);
@@ -2326,7 +2873,8 @@ function wireOrgChartPage() {
   
   document.getElementById("exportOrgChart")?.addEventListener("click", () => {
     // Export as text-based org chart
-    const stakeholders = state.stakeholders || [];
+    const project = getActiveProject();
+    const stakeholders = project?.stakeholders || [];
     const byLevel = {};
     const byCategory = {};
     
@@ -2387,7 +2935,7 @@ function wireOrgChartPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `org-chart-${state.project.name || 'structure'}.txt`;
+    a.download = `org-chart-${project?.name || 'structure'}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast("Org chart exported");
@@ -2397,7 +2945,90 @@ function wireOrgChartPage() {
   document.querySelectorAll(".org-node").forEach(node => {
     node.addEventListener("click", () => {
       const id = node.dataset.stakeholderId;
-      const s = state.stakeholders.find(sh => sh.id === id);
+      const project = getActiveProject();
+      const s = project?.stakeholders.find(sh => sh.id === id);
+      if (s) openStakeholderModal(s);
+    });
+  });
+}
+
+function wireOrgChartButtons() {
+  // Export org chart
+  document.getElementById("exportOrgChart")?.addEventListener("click", () => {
+    const project = getActiveProject();
+    const stakeholders = project?.stakeholders || [];
+    const byLevel = {};
+    const byCategory = {};
+    
+    stakeholders.forEach(s => {
+      const level = s.hierarchyLevel || 0;
+      if (!byLevel[level]) byLevel[level] = [];
+      byLevel[level].push(s);
+      
+      const cat = s.category || "other";
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(s);
+    });
+    
+    const lines = [];
+    lines.push("ORGANIZATIONAL BREAKDOWN STRUCTURE");
+    lines.push("=".repeat(50));
+    lines.push("");
+    
+    // By Hierarchy
+    lines.push("BY HIERARCHY LEVEL");
+    lines.push("-".repeat(50));
+    Object.keys(byLevel).sort((a, b) => parseInt(a) - parseInt(b)).forEach(levelNum => {
+      const levelLabel = levelNum === '0' ? 'LEADERSHIP' : levelNum === '1' ? 'MANAGEMENT' : levelNum === '2' ? 'TEAM MEMBERS' : `LEVEL ${levelNum}`;
+      lines.push("");
+      lines.push(levelLabel);
+      
+      byLevel[levelNum].forEach(s => {
+        lines.push(`  • ${s.name} - ${s.role}`);
+        if (s.department) lines.push(`    Department: ${s.department}`);
+        const cat = STAKEHOLDER_CATEGORIES.find(c => c.id === s.category);
+        if (cat) lines.push(`    Category: ${cat.label}`);
+        if (s.reportsTo) {
+          const manager = stakeholders.find(sh => sh.id === s.reportsTo);
+          if (manager) lines.push(`    Reports to: ${manager.name}`);
+        }
+      });
+    });
+    
+    lines.push("");
+    lines.push("");
+    lines.push("BY FUNCTIONAL CATEGORY");
+    lines.push("-".repeat(50));
+    
+    STAKEHOLDER_CATEGORIES.forEach(cat => {
+      const members = byCategory[cat.id] || [];
+      if (members.length === 0) return;
+      
+      lines.push("");
+      lines.push(`${cat.icon} ${cat.label.toUpperCase()} (${members.length})`);
+      members.forEach(s => {
+        lines.push(`  • ${s.name} - ${s.role}`);
+        if (s.department) lines.push(`    Department: ${s.department}`);
+      });
+    });
+    
+    const text = lines.join('\n');
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `org-chart-${project?.name || 'structure'}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Org chart exported");
+  });
+  
+  // Click on org nodes to edit
+  document.querySelectorAll(".org-node").forEach(node => {
+    node.addEventListener("click", () => {
+      const id = node.dataset.stakeholderId;
+      const project = getActiveProject();
+      const s = project?.stakeholders.find(sh => sh.id === id);
       if (s) openStakeholderModal(s);
     });
   });
@@ -2415,6 +3046,41 @@ function wireStakeholdersPage() {
   document.getElementById("viewRegister")?.addEventListener("click", () => {
     openStakeholderRegister();
   });
+  
+  document.getElementById("viewEngagementAssessment")?.addEventListener("click", () => {
+    openEngagementAssessment();
+  });
+  
+  // View mode toggles
+  document.getElementById("viewModeCards")?.addEventListener("click", () => {
+    document.getElementById("stakeholderCardsView").style.display = "block";
+    document.getElementById("stakeholderOrgChartView").style.display = "none";
+    document.getElementById("viewModeCards").style.opacity = "1";
+    document.getElementById("viewModeOrgChart").style.opacity = "0.6";
+  });
+  
+  document.getElementById("viewModeOrgChart")?.addEventListener("click", () => {
+    document.getElementById("stakeholderCardsView").style.display = "none";
+    document.getElementById("stakeholderOrgChartView").style.display = "block";
+    document.getElementById("viewModeCards").style.opacity = "0.6";
+    document.getElementById("viewModeOrgChart").style.opacity = "1";
+    
+    // Wire org chart buttons
+    wireOrgChartButtons();
+  });
+  
+  // Org chart hierarchy/category toggles
+  document.getElementById("toggleOrgView")?.addEventListener("click", () => {
+    document.getElementById("hierarchyView").style.display = "block";
+    document.getElementById("categoryView").style.display = "none";
+    toast("Showing hierarchy view");
+  });
+  
+  document.getElementById("toggleCategoryView")?.addEventListener("click", () => {
+    document.getElementById("hierarchyView").style.display = "none";
+    document.getElementById("categoryView").style.display = "block";
+    toast("Showing category view");
+  });
 
   document.querySelectorAll("[data-edit-stakeholder]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -2428,16 +3094,22 @@ function wireStakeholdersPage() {
     btn.addEventListener("click", () => {
       if (!confirm("Delete this stakeholder?")) return;
       const id = btn.dataset.deleteStakeholder;
-      state.stakeholders = state.stakeholders.filter(s => s.id !== id);
-      saveState();
-      render();
-      toast("Stakeholder deleted");
+      const project = getActiveProject();
+      if (project) {
+        project.stakeholders = project.stakeholders.filter(s => s.id !== id);
+        saveState();
+        render();
+        toast("Stakeholder deleted");
+      }
     });
   });
 
   document.getElementById("exportStakeholders")?.addEventListener("click", () => {
+    const project = getActiveProject();
+    if (!project) return;
+    
     const csv = "Name,Role,Department,Influence,Impact,Engagement,Notes\n" +
-      state.stakeholders.map(s => 
+      project.stakeholders.map(s => 
         `"${s.name}","${s.role}","${s.department}",${s.influence},${s.impact},"${s.engagement}","${s.notes}"`
       ).join("\n");
     
@@ -2452,22 +3124,372 @@ function wireStakeholdersPage() {
   });
 }
 
+function loadSampleData() {
+  console.log("loadSampleData function called");
+  
+  const sampleProject = createNewProject();
+  sampleProject.name = "Pet Care Platform Modernization";
+  sampleProject.description = "Modernizing the Pet Buddy platform to improve customer experience, streamline operations, and support business growth through enhanced digital capabilities.";
+  sampleProject.status = "active";
+  
+  console.log("Project set:", sampleProject);
+  
+  sampleProject.stakeholders = [
+    {
+      id: "sample_1",
+      name: "Samantha Chen",
+      role: "Product Owner",
+      department: "Product",
+      category: "leadership",
+      influence: 90,
+      impact: 70,
+      engagement: "leading",
+      notes: "Provides strategic direction, funding approval, and helps remove escalated blockers. Key decision-maker for scope and priorities.",
+      contact: "samantha.chen@petbuddy.com",
+      hierarchyLevel: 0,
+      reportsTo: null
+    },
+    {
+      id: "sample_2",
+      name: "Lucas Martinez",
+      role: "Operations Manager",
+      department: "Operations",
+      category: "operations",
+      influence: 65,
+      impact: 85,
+      engagement: "supportive",
+      notes: "Ensures the platform is staffed and resourced for operations. Manages day-to-day operational processes and team coordination.",
+      contact: "lucas.m@petbuddy.com",
+      hierarchyLevel: 1,
+      reportsTo: "sample_1"
+    },
+    {
+      id: "sample_3",
+      name: "Sophie Anderson",
+      role: "Marketing Manager",
+      department: "Marketing",
+      category: "marketing",
+      influence: 45,
+      impact: 60,
+      engagement: "neutral",
+      notes: "Provides marketing materials and information to support the Pet Buddy brand. Coordinates promotional campaigns and customer communications.",
+      contact: "sophie.a@petbuddy.com",
+      hierarchyLevel: 1,
+      reportsTo: "sample_1"
+    },
+    {
+      id: "sample_4",
+      name: "Dr. Emily Patterson",
+      role: "Lead Veterinarian",
+      department: "Medical Services",
+      category: "customer_facing",
+      influence: 55,
+      impact: 75,
+      engagement: "supportive",
+      notes: "Provides expert veterinary advice and medical services. Key stakeholder for medical feature requirements and clinical workflows.",
+      contact: "dr.patterson@petbuddy.com",
+      hierarchyLevel: 1,
+      reportsTo: "sample_2"
+    },
+    {
+      id: "sample_5",
+      name: "Rachel Kim",
+      role: "Customer Service Manager",
+      department: "Customer Service",
+      category: "customer_facing",
+      influence: 70,
+      impact: 50,
+      engagement: "supportive",
+      notes: "Leads customer service department and handles complex customer issues. Strong advocate for user experience improvements.",
+      contact: "rachel.kim@petbuddy.com",
+      hierarchyLevel: 1,
+      reportsTo: "sample_2"
+    },
+    {
+      id: "sample_6",
+      name: "Ben Thompson",
+      role: "IT Support Lead",
+      department: "Technology",
+      category: "engineering",
+      influence: 80,
+      impact: 65,
+      engagement: "leading",
+      notes: "Manages Pet Buddy platform integration and existing systems support. Critical for technical feasibility and infrastructure decisions.",
+      contact: "ben.t@petbuddy.com",
+      hierarchyLevel: 1,
+      reportsTo: "sample_1"
+    },
+    {
+      id: "sample_7",
+      name: "Chloe Williams",
+      role: "Senior Pet Care Specialist",
+      department: "Operations",
+      category: "customer_facing",
+      influence: 40,
+      impact: 80,
+      engagement: "neutral",
+      notes: "Domain expertise on Pet Buddy service delivery methods and best practices. Daily hands-on experience with current system pain points.",
+      contact: "chloe.w@petbuddy.com",
+      hierarchyLevel: 2,
+      reportsTo: "sample_2"
+    },
+    {
+      id: "sample_8",
+      name: "Lily Patel",
+      role: "Pet Care Specialist",
+      department: "Operations",
+      category: "customer_facing",
+      influence: 35,
+      impact: 75,
+      engagement: "resistant",
+      notes: "Frontline team member with concerns about new system learning curve. Important to address usability and training needs early.",
+      contact: "lily.p@petbuddy.com",
+      hierarchyLevel: 2,
+      reportsTo: "sample_7"
+    },
+    {
+      id: "sample_9",
+      name: "Billy Roberts",
+      role: "Project Manager",
+      department: "PMO",
+      category: "leadership",
+      influence: 60,
+      impact: 55,
+      engagement: "leading",
+      notes: "Ensures project work gets done on time and within budget. Coordinates cross-functional activities and manages project timeline.",
+      contact: "billy.r@petbuddy.com",
+      hierarchyLevel: 1,
+      reportsTo: "sample_1"
+    },
+    {
+      id: "sample_10",
+      name: "Matt Chen",
+      role: "Business Analyst",
+      department: "Business Analysis",
+      category: "operations",
+      influence: 50,
+      impact: 70,
+      engagement: "leading",
+      notes: "Captures customer requirements and ensures the solution meets business needs. Writes user stories and acceptance criteria.",
+      contact: "matt.c@petbuddy.com",
+      hierarchyLevel: 2,
+      reportsTo: "sample_9"
+    },
+    {
+      id: "sample_11",
+      name: "Olivia Zhang",
+      role: "Senior Developer",
+      department: "Engineering",
+      category: "engineering",
+      influence: 55,
+      impact: 85,
+      engagement: "supportive",
+      notes: "Ensures the platform meets customer requirements without quality issues. Leads technical implementation and code reviews.",
+      contact: "olivia.z@petbuddy.com",
+      hierarchyLevel: 2,
+      reportsTo: "sample_6"
+    },
+    {
+      id: "sample_12",
+      name: "Maya Gupta",
+      role: "QA Test Lead",
+      department: "Quality Assurance",
+      category: "support",
+      influence: 45,
+      impact: 60,
+      engagement: "supportive",
+      notes: "Tests and ensures the product is defect-free before release. Defines test strategy and manages UAT coordination.",
+      contact: "maya.g@petbuddy.com",
+      hierarchyLevel: 2,
+      reportsTo: "sample_6"
+    }
+  ];
+  
+  sampleProject.requirements = {
+    problem: "Pet Buddy's current platform is outdated, leading to slow response times, poor mobile experience, and manual workarounds for common tasks. Customer satisfaction scores have declined 15% over the past year, and operational costs are 30% higher than industry benchmarks due to system inefficiencies.",
+    goal: "Modernize the Pet Buddy platform to achieve: (1) 40% reduction in average task completion time, (2) 90%+ mobile usability score, (3) 25% reduction in operational costs through automation, and (4) improvement in customer satisfaction from 3.2/5 to 4.5/5 within 6 months of launch.",
+    inScope: "Online booking and scheduling system\nMobile-responsive customer portal\nAutomated appointment reminders (SMS/email)\nDigital payment processing\nPet health records management\nReal-time availability calendar\nCustomer communication hub",
+    outScope: "Physical clinic infrastructure changes\nVeterinary inventory management system\nPayroll and HR systems\nThird-party pet insurance integrations (Phase 2)\nAdvanced AI diagnostics (future roadmap)",
+    success: "Customer satisfaction score increase from 3.2 to 4.5+ (monthly survey)\nBooking completion rate >85% (currently 62%)\nMobile traffic conversion rate >70% (currently 28%)\nAverage task completion time reduced by 40%\nOperational cost reduction of 25% within 6 months\nSystem uptime >99.5%",
+    constraints: "Budget cap of $500K for Phase 1\nMust integrate with existing Salesforce CRM\nLaunch required before peak season (Q4 2026)\nMust comply with veterinary data privacy regulations\nLimited to 3 full-time developers on the team\nNo disruption to current operations during rollout",
+    assumptions: "Current Salesforce CRM will remain the system of record\nPet owners have smartphones and basic digital literacy\nExisting staff will adopt new system with 2 weeks training\nThird-party payment gateway (Stripe) will meet requirements\nCloud hosting costs will not exceed $2K/month\nCustomer base will grow 20% annually",
+    risks: "Integration complexity with legacy Salesforce (High) - Mitigation: Early technical spike\nStaff resistance to new workflows (Medium) - Mitigation: Early involvement + training\nScope creep from stakeholders (Medium) - Mitigation: Strict change control process\nVendor delays on payment gateway API (Low) - Mitigation: Backup provider identified\nRegulatory compliance changes (Low) - Mitigation: Legal review at each milestone"
+  };
+  
+  sampleProject.process = {
+    asIs: "1. Customer calls clinic to request appointment\n2. Receptionist manually checks paper calendar for availability\n3. Receptionist calls back customer with options (often multiple attempts)\n4. Customer confirms time verbally\n5. Receptionist writes appointment in paper calendar and reminder sticky note\n6. Day before appointment, receptionist manually calls customer to confirm\n7. Customer arrives and pays by cash/check (limited card processing)\n8. Receptionist updates paper records after visit",
+    toBe: "1. Customer opens mobile app or website and views real-time availability\n2. Customer selects preferred time slot and pet from their account\n3. System automatically confirms booking and sends confirmation SMS/email\n4. System sends automated reminder 24 hours before appointment\n5. Customer receives notification to pre-pay via app (optional)\n6. Customer checks in via app on arrival (reduces wait time)\n7. After visit, digital health record is automatically updated\n8. Customer receives follow-up care instructions and feedback request via app",
+    decisions: "IF appointment is within 24 hours, require phone confirmation (not just digital)\nIF customer is new (no account), allow guest checkout but encourage registration\nIF payment fails, hold appointment for 2 hours then release slot\nIF slot is cancelled <24hrs notice, apply $25 cancellation fee\nIF veterinarian is unavailable, automatically suggest alternative vet or reschedule",
+    exceptions: "Emergency appointments bypass normal booking (direct phone triage)\nWalk-ins are accommodated if <15min wait, otherwise directed to online booking\nCorporate/rescue accounts have special billing workflows (invoice, not card)\nAfter-hours bookings go to waitlist, confirmed next business day\nSystem downtime: staff use backup Google Calendar with manual sync when restored"
+  };
+  
+  console.log("Saving state and rendering...");
+  console.log("Total stakeholders:", sampleProject.stakeholders.length);
+  
+  // Add to projects array and set as active
+  state.projects.push(sampleProject);
+  state.activeProjectId = sampleProject.id;
+  
+  saveState();
+  toast("Sample project loaded! Explore the tabs to see example data.");
+  render();
+}
+
+function wireProjectsPage() {
+  // Create new project
+  document.getElementById("createProject")?.addEventListener("click", createNewProjectHandler);
+  document.getElementById("createFirstProject")?.addEventListener("click", createNewProjectHandler);
+  
+  // Load sample
+  document.getElementById("loadSampleProject")?.addEventListener("click", () => {
+    loadSampleData();
+  });
+  
+  // Open project
+  document.querySelectorAll("[data-open-project]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const projectId = btn.dataset.openProject;
+      setActiveProject(projectId);
+      setRoute("home");
+      toast("Project loaded");
+    });
+  });
+  
+  // Clone project
+  document.querySelectorAll("[data-clone-project]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const projectId = btn.dataset.cloneProject;
+      const original = state.projects.find(p => p.id === projectId);
+      if (!original) return;
+      
+      const clone = structuredClone(original);
+      clone.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+      clone.name = clone.name + " (Copy)";
+      clone.createdDate = new Date().toISOString();
+      clone.lastModified = new Date().toISOString();
+      clone.status = "draft";
+      
+      state.projects.push(clone);
+      saveState();
+      render();
+      toast("Project cloned");
+    });
+  });
+  
+  // Export project
+  document.querySelectorAll("[data-export-project]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const projectId = btn.dataset.exportProject;
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      
+      const json = JSON.stringify(project, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${project.name || 'project'}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("Project exported");
+    });
+  });
+  
+  // Change status
+  document.querySelectorAll("[data-change-status]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const projectId = btn.dataset.changeStatus;
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      
+      if (project.status === "draft" || project.status === "archived") {
+        project.status = "active";
+      } else if (project.status === "active") {
+        project.status = "completed";
+      } else if (project.status === "completed") {
+        project.status = "archived";
+      }
+      
+      saveState();
+      render();
+      toast(`Project marked as ${project.status}`);
+    });
+  });
+  
+  // Delete project
+  document.querySelectorAll("[data-delete-project]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const projectId = btn.dataset.deleteProject;
+      const project = state.projects.find(p => p.id === projectId);
+      if (!project) return;
+      
+      if (!confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
+      
+      state.projects = state.projects.filter(p => p.id !== projectId);
+      if (state.activeProjectId === projectId) {
+        state.activeProjectId = state.projects.length > 0 ? state.projects[0].id : null;
+      }
+      
+      saveState();
+      render();
+      toast("Project deleted");
+    });
+  });
+}
+
+function createNewProjectHandler() {
+  const newProject = createNewProject();
+  newProject.name = "New Project";
+  newProject.status = "draft";
+  
+  state.projects.push(newProject);
+  state.activeProjectId = newProject.id;
+  
+  saveState();
+  setRoute("home");
+  toast("New project created");
+}
+
 function wireHomePage() {
+  const project = getActiveProject();
   const nameInput = document.getElementById("projectName");
   const descInput = document.getElementById("projectDesc");
   
   nameInput?.addEventListener("input", () => {
-    state.project.name = nameInput.value;
-    saveState();
+    if (project) {
+      project.name = nameInput.value;
+      saveState();
+    }
   });
   
   descInput?.addEventListener("input", () => {
-    state.project.description = descInput.value;
-    saveState();
+    if (project) {
+      project.description = descInput.value;
+      saveState();
+    }
+  });
+  
+  document.getElementById("createNewProject")?.addEventListener("click", createNewProjectHandler);
+  document.getElementById("loadSampleFromEmpty")?.addEventListener("click", () => {
+    loadSampleData();
+  });
+  
+  document.getElementById("loadSampleData")?.addEventListener("click", () => {
+    console.log("Load sample data button clicked");
+    if (state.projects && state.projects.length > 0) {
+      if (confirm("This will create a new sample project. Continue?")) {
+        loadSampleData();
+      }
+    } else {
+      loadSampleData();
+    }
   });
 }
 
 function wireRequirementsPage() {
+  const project = getActiveProject();
+  if (!project) return;
+  
   const fields = [
     { id: "reqProblem", key: "problem" },
     { id: "reqGoal", key: "goal" },
@@ -2482,13 +3504,16 @@ function wireRequirementsPage() {
   fields.forEach(({ id, key }) => {
     const el = document.getElementById(id);
     el?.addEventListener("input", () => {
-      state.requirements[key] = el.value;
+      project.requirements[key] = el.value;
       saveState();
     });
   });
 }
 
 function wireProcessPage() {
+  const project = getActiveProject();
+  if (!project) return;
+  
   const fields = [
     { id: "procAsIs", key: "asIs" },
     { id: "procToBe", key: "toBe" },
@@ -2499,7 +3524,7 @@ function wireProcessPage() {
   fields.forEach(({ id, key }) => {
     const el = document.getElementById(id);
     el?.addEventListener("input", () => {
-      state.process[key] = el.value;
+      project.process[key] = el.value;
       saveState();
     });
   });
@@ -2522,19 +3547,25 @@ function wireOutputPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `BAB-${state.project.name || 'output'}.txt`;
+    const project = getActiveProject();
+    a.download = `BAB-${project?.name || 'output'}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast("Downloaded");
   });
 
   document.getElementById("exportProject")?.addEventListener("click", () => {
-    const json = JSON.stringify(state, null, 2);
+    const project = getActiveProject();
+    if (!project) {
+      toast("No active project");
+      return;
+    }
+    const json = JSON.stringify(project, null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `BAB-${state.project.name || 'project'}.json`;
+    a.download = `BAB-${project.name || 'project'}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast("Project exported");
@@ -2552,7 +3583,14 @@ function wireOutputPage() {
     reader.onload = () => {
       try {
         const imported = JSON.parse(reader.result);
-        state = { ...structuredClone(DEFAULT_STATE), ...imported };
+        // Ensure it has a new ID
+        imported.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+        imported.createdDate = new Date().toISOString();
+        imported.lastModified = new Date().toISOString();
+        
+        state.projects.push(imported);
+        state.activeProjectId = imported.id;
+        
         saveState();
         render();
         toast("Project imported");
@@ -2570,6 +3608,21 @@ function wireOutputPage() {
 function render() {
   const app = document.getElementById("app");
   
+  // Update active project indicator
+  const project = getActiveProject();
+  const indicator = document.getElementById("activeProjectIndicator");
+  if (indicator) {
+    if (project) {
+      indicator.textContent = `Active: ${project.name || 'Untitled'}`;
+      indicator.style.color = "var(--accent-primary)";
+      indicator.style.fontWeight = "600";
+    } else {
+      indicator.textContent = "No active project";
+      indicator.style.color = "var(--text-muted)";
+      indicator.style.fontWeight = "400";
+    }
+  }
+  
   // Update nav
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.route === state.route);
@@ -2579,13 +3632,13 @@ function render() {
   let html = "";
   switch (state.route) {
     case "home": html = viewHome(); break;
+    case "projects": html = viewProjects(); break;
     case "stakeholders": html = viewStakeholders(); break;
-    case "orgchart": html = viewOrgChart(); break;
     case "requirements": html = viewRequirements(); break;
     case "process": html = viewProcess(); break;
     case "output": html = viewOutput(); break;
     case "library": html = viewLibrary(); break;
-    default: html = viewHome();
+    default: html = viewProjects();
   }
   
   app.innerHTML = html;
@@ -2593,8 +3646,8 @@ function render() {
   // Wire up page-specific events
   switch (state.route) {
     case "home": wireHomePage(); break;
+    case "projects": wireProjectsPage(); break;
     case "stakeholders": wireStakeholdersPage(); break;
-    case "orgchart": wireOrgChartPage(); break;
     case "requirements": wireRequirementsPage(); break;
     case "process": wireProcessPage(); break;
     case "output": wireOutputPage(); break;
