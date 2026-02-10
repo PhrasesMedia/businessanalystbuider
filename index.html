@@ -3739,42 +3739,65 @@ function loadSampleData() {
     success: "Customer satisfaction score increase from 3.2 to 4.5+ (monthly survey)\nBooking completion rate >85% (currently 62%)\nMobile traffic conversion rate >70% (currently 28%)\nAverage task completion time reduced by 40%\nOperational cost reduction of 25% within 6 months\nSystem uptime >99.5%",
     acceptanceCriteria: [
       {
-        title: "Customer can book an appointment on mobile",
+        title: "User can book an appointment via mobile",
         steps: [
-          "Customer opens the mobile app or website",
-          "Customer selects desired service and date/time",
-          "System confirms booking within 3 clicks",
-          "Entire process completes in under 60 seconds",
-          "Customer receives confirmation SMS immediately"
+          "User opens app and sees available service types",
+          "User selects service (e.g., 'Wellness Checkup')",
+          "User sees available time slots for next 30 days",
+          "User selects preferred date and time",
+          "System displays booking summary with pet name, service, date, time",
+          "User clicks 'Confirm Booking'",
+          "Booking confirmation appears with unique booking ID",
+          "User receives SMS confirmation within 30 seconds"
         ]
       },
       {
-        title: "Automated appointment reminders are sent",
+        title: "Appointment reminder system functions correctly",
         steps: [
-          "System checks for appointments 24 hours in advance",
-          "SMS reminder is automatically sent to customer",
-          "Reminder includes appointment details and cancellation link",
-          "Delivery confirmed within 5 minutes of trigger time"
+          "System runs automated check every hour for appointments in next 24-25 hours",
+          "System identifies appointments without sent reminders",
+          "System generates SMS with format: 'Hi [Name], reminder: [Pet] has [Service] tomorrow at [Time]. Reply C to cancel.'",
+          "SMS is sent to customer's registered phone number",
+          "System logs reminder as 'sent' in appointment record",
+          "If SMS delivery fails, system flags appointment for manual follow-up"
         ]
       },
       {
-        title: "Customer can pay digitally at checkout",
+        title: "Digital payment processing works end-to-end",
         steps: [
-          "Customer completes their appointment",
-          "Staff initiates checkout in the system",
-          "Customer selects payment method (card/digital wallet)",
-          "Payment processes successfully",
-          "Digital receipt sent to customer email within 2 minutes"
+          "Staff member selects 'Check Out' for completed appointment",
+          "System displays itemized bill with services rendered and products purchased",
+          "Customer selects payment method (Credit Card, Debit Card, Apple Pay, Google Pay)",
+          "Payment gateway processes transaction securely",
+          "Upon successful payment, system displays 'Payment Successful' message",
+          "Digital receipt is generated as PDF",
+          "Receipt is emailed to customer's registered email within 2 minutes",
+          "Payment is recorded in transaction log with timestamp"
         ]
       },
       {
-        title: "Staff can access pet health records quickly",
+        title: "Pet health records are accessible and complete",
         steps: [
-          "Staff member searches by pet name or owner name",
-          "System returns matching results",
-          "Staff selects the correct pet record",
-          "Complete health history loads in under 2 seconds",
-          "Records display vaccination dates, visit notes, and prescriptions"
+          "Staff enters pet name or owner name in search bar",
+          "System returns list of matching results",
+          "Staff selects correct pet record",
+          "Record displays: pet details, vaccination history, visit notes, prescriptions, allergies",
+          "Page loads completely within 2 seconds",
+          "Staff can add new visit notes with date, vet name, and summary",
+          "Updates save immediately with confirmation message",
+          "All changes are timestamped and attributed to staff member"
+        ]
+      },
+      {
+        title: "System handles peak load without performance degradation",
+        steps: [
+          "System is load tested with 500 concurrent users",
+          "All pages load in under 3 seconds during peak load",
+          "Booking transactions complete successfully without errors",
+          "Database queries execute in under 1 second",
+          "No timeout errors occur during test period",
+          "System memory usage stays below 80% capacity",
+          "CPU usage remains below 70% during peak load"
         ]
       }
     ],
