@@ -1105,6 +1105,7 @@ font-size: 1rem;
       <button class="nav-btn" data-route="process">Process</button>
       <button class="nav-btn" data-route="acceptance">Acceptance Criteria</button>
       <button class="nav-btn" data-route="output">Output</button>
+      <button class="nav-btn" data-route="retrospective">Retrospective</button>
       <button class="nav-btn" data-route="library">Library</button>
     </nav>
   </header>
@@ -1166,6 +1167,13 @@ const DEFAULT_PROJECT = {
     toBe: "",
     decisions: "",
     exceptions: ""
+  },
+  retrospective: {
+    wentWell: "",
+    couldImprove: "",
+    learned: "",
+    puzzles: "",
+    stakeholderFeedback: [] // Array of {stakeholder, feedback}
   }
 };
 
@@ -2251,57 +2259,67 @@ function viewRequirements() {
             <textarea class="input" id="reqOutScope" placeholder="What is NOT included?">${escapeHtml(r.outScope)}</textarea>
             <div class="input-hint">Prevents scope creep</div>
           </div>
+          
+          <!-- MoSCoW Prioritization (optional, in middle) -->
+          <div class="form-group">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <label style="margin: 0;">MoSCoW Prioritization (Optional)</label>
+              <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; margin: 0;">
+                <input type="checkbox" id="enableMoscow" ${(r.moscowPrioritization && r.moscowPrioritization.length > 0) ? 'checked' : ''} style="cursor: pointer;" />
+                <span style="font-size: 0.875rem; color: var(--text-muted);">Show chart</span>
+              </label>
+            </div>
+            
+            <div id="moscowContainer" style="display: ${(r.moscowPrioritization && r.moscowPrioritization.length > 0) ? 'block' : 'none'};">
+              <div class="input-hint" style="margin-bottom: 12px;">Plot requirements by Value vs Effort to prioritize features</div>
+              
+              <div id="moscowChart" style="position: relative; background: white; padding: 40px 40px 60px 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 500px;">
+                <!-- Y-axis label -->
+                <div style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%) rotate(-90deg); font-size: 0.875rem; font-weight: 600; color: #6b7280; white-space: nowrap;">Value</div>
+                
+                <!-- X-axis label -->
+                <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 0.875rem; font-weight: 600; color: #6b7280;">Effort</div>
+                
+                <!-- Chart grid -->
+                <div style="position: relative; width: 100%; height: 400px; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                  
+                  <!-- Quadrants -->
+                  <div style="position: absolute; top: 0; left: 0; width: 50%; height: 50%; background: #bfdbfe; opacity: 0.4;"></div>
+                  <div style="position: absolute; top: 0; right: 0; width: 50%; height: 50%; background: #d9f99d; opacity: 0.4;"></div>
+                  <div style="position: absolute; bottom: 0; left: 0; width: 50%; height: 50%; background: #fef08a; opacity: 0.4;"></div>
+                  <div style="position: absolute; bottom: 0; right: 0; width: 50%; height: 50%; background: #fecaca; opacity: 0.4;"></div>
+                  
+                  <!-- Quadrant labels -->
+                  <div style="position: absolute; top: 10px; left: 10px; font-weight: 600; color: #1e40af; font-size: 0.875rem;">Must Have</div>
+                  <div style="position: absolute; top: 10px; right: 10px; font-weight: 600; color: #65a30d; font-size: 0.875rem;">Should Have</div>
+                  <div style="position: absolute; bottom: 10px; left: 10px; font-weight: 600; color: #ca8a04; font-size: 0.875rem;">Could Have</div>
+                  <div style="position: absolute; bottom: 10px; right: 10px; font-weight: 600; color: #dc2626; font-size: 0.875rem;">Won't Have</div>
+                  
+                  <!-- Y-axis scale -->
+                  <div style="position: absolute; left: -30px; top: 0; font-size: 0.75rem; color: #9ca3af;">10</div>
+                  <div style="position: absolute; left: -30px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: #9ca3af;">5</div>
+                  <div style="position: absolute; left: -30px; bottom: 0; font-size: 0.75rem; color: #9ca3af;">0</div>
+                  
+                  <!-- X-axis scale -->
+                  <div style="position: absolute; bottom: -25px; left: 0; font-size: 0.75rem; color: #9ca3af;">0</div>
+                  <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; color: #9ca3af;">5</div>
+                  <div style="position: absolute; bottom: -25px; right: 0; font-size: 0.75rem; color: #9ca3af;">10</div>
+                  
+                  <!-- Items container -->
+                  <div id="moscowItems">
+                    <!-- Items will be rendered here -->
+                  </div>
+                </div>
+              </div>
+              
+              <button type="button" class="btn btn-primary" id="addMoscowItem" style="margin-top: 16px;">+ Add Requirement</button>
+            </div>
+          </div>
 
           <div class="form-group">
             <label>Success Measures</label>
             <textarea class="input" id="reqSuccess" placeholder="How will we measure success?">${escapeHtml(r.success)}</textarea>
             <div class="input-hint">Leading and lagging indicators</div>
-          </div>
-          
-          <div class="form-group">
-            <label>MoSCoW Prioritization</label>
-            <div class="input-hint" style="margin-bottom: 12px;">Plot requirements by Value (benefit) vs Cost (effort)</div>
-            
-            <div id="moscowChart" style="position: relative; background: white; padding: 40px 40px 60px 80px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 500px;">
-              <!-- Y-axis label -->
-              <div style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%) rotate(-90deg); font-size: 0.875rem; font-weight: 600; color: #6b7280; white-space: nowrap;">Benefit (or Value)</div>
-              
-              <!-- X-axis label -->
-              <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 0.875rem; font-weight: 600; color: #6b7280;">Cost (or Effort)</div>
-              
-              <!-- Chart grid -->
-              <div style="position: relative; width: 100%; height: 400px; border: 2px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                
-                <!-- Quadrants -->
-                <div style="position: absolute; top: 0; left: 0; width: 50%; height: 50%; background: #bfdbfe; opacity: 0.4;"></div>
-                <div style="position: absolute; top: 0; right: 0; width: 50%; height: 50%; background: #d9f99d; opacity: 0.4;"></div>
-                <div style="position: absolute; bottom: 0; left: 0; width: 50%; height: 50%; background: #fef08a; opacity: 0.4;"></div>
-                <div style="position: absolute; bottom: 0; right: 0; width: 50%; height: 50%; background: #fecaca; opacity: 0.4;"></div>
-                
-                <!-- Quadrant labels -->
-                <div style="position: absolute; top: 10px; left: 10px; font-weight: 600; color: #1e40af; font-size: 0.875rem;">Must Have</div>
-                <div style="position: absolute; top: 10px; right: 10px; font-weight: 600; color: #65a30d; font-size: 0.875rem;">Should Have</div>
-                <div style="position: absolute; bottom: 10px; left: 10px; font-weight: 600; color: #ca8a04; font-size: 0.875rem;">Could Have</div>
-                <div style="position: absolute; bottom: 10px; right: 10px; font-weight: 600; color: #dc2626; font-size: 0.875rem;">Won't Have</div>
-                
-                <!-- Y-axis scale -->
-                <div style="position: absolute; left: -30px; top: 0; font-size: 0.75rem; color: #9ca3af;">10</div>
-                <div style="position: absolute; left: -30px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: #9ca3af;">5</div>
-                <div style="position: absolute; left: -30px; bottom: 0; font-size: 0.75rem; color: #9ca3af;">0</div>
-                
-                <!-- X-axis scale -->
-                <div style="position: absolute; bottom: -25px; left: 0; font-size: 0.75rem; color: #9ca3af;">0</div>
-                <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 0.75rem; color: #9ca3af;">5</div>
-                <div style="position: absolute; bottom: -25px; right: 0; font-size: 0.75rem; color: #9ca3af;">10</div>
-                
-                <!-- Items container -->
-                <div id="moscowItems">
-                  <!-- Items will be rendered here -->
-                </div>
-              </div>
-            </div>
-            
-            <button type="button" class="btn btn-primary" id="addMoscowItem" style="margin-top: 16px;">+ Add Requirement</button>
           </div>
 
           <div class="form-group">
@@ -2459,6 +2477,104 @@ function viewOutput() {
   `;
 }
 
+function viewRetrospective() {
+  const project = getActiveProject();
+  
+  if (!project) {
+    return `<div class="card"><div class="card-body"><div class="empty-state"><h3>No Active Project</h3><p>Please select or create a project first</p><button class="btn btn-primary" data-route="projects">Go to Projects</button></div></div></div>`;
+  }
+  
+  // Ensure retrospective exists
+  if (!project.retrospective) {
+    project.retrospective = {
+      wentWell: "",
+      couldImprove: "",
+      learned: "",
+      puzzles: "",
+      stakeholderFeedback: []
+    };
+  }
+  
+  const retro = project.retrospective;
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Project Retrospective</h2>
+        <p class="card-subtitle">Reflect on the project and gather stakeholder feedback</p>
+      </div>
+      
+      <div class="card-body">
+        <div class="input-hint" style="margin-bottom: 20px; padding: 16px; background: var(--bg-tertiary); border-left: 4px solid var(--accent-primary); border-radius: 4px;">
+          <strong>Post-Implementation Review</strong><br/>
+          Capture lessons learned and stakeholder feedback after project completion. This helps improve future projects and demonstrates accountability.
+        </div>
+        
+        <div class="grid grid-2" style="gap: var(--gap);">
+          <!-- What Went Well -->
+          <div class="form-group">
+            <label>✅ What Went Well?</label>
+            <textarea class="input" id="retroWentWell" placeholder="Successes, wins, positive outcomes...
+• Team collaboration exceeded expectations
+• Delivered 2 weeks ahead of schedule
+• Stakeholder engagement was strong">${escapeHtml(retro.wentWell)}</textarea>
+            <div class="input-hint">Celebrate successes</div>
+          </div>
+          
+          <!-- What Could Be Improved -->
+          <div class="form-group">
+            <label>🔧 What Could Still Be Improved?</label>
+            <textarea class="input" id="retroCouldImprove" placeholder="Areas for enhancement, missed opportunities...
+• Communication gaps during requirements phase
+• More user testing needed early on
+• Documentation could be more detailed">${escapeHtml(retro.couldImprove)}</textarea>
+            <div class="input-hint">Honest feedback for growth</div>
+          </div>
+          
+          <!-- What Have We Learned -->
+          <div class="form-group">
+            <label>💡 What Have We Learned?</label>
+            <textarea class="input" id="retroLearned" placeholder="Key insights, takeaways for future projects...
+• Early stakeholder workshops saved time later
+• Prototyping reduces rework significantly
+• Weekly check-ins keep everyone aligned">${escapeHtml(retro.learned)}</textarea>
+            <div class="input-hint">Knowledge to carry forward</div>
+          </div>
+          
+          <!-- What Still Puzzles Us -->
+          <div class="form-group">
+            <label>❓ What Still Puzzles Us?</label>
+            <textarea class="input" id="retroPuzzles" placeholder="Open questions, unresolved issues, mysteries...
+• Why did adoption take longer than expected?
+• How can we better estimate complex integrations?
+• What caused the delay in vendor response?">${escapeHtml(retro.puzzles)}</textarea>
+            <div class="input-hint">Questions to investigate</div>
+          </div>
+        </div>
+        
+        <!-- Stakeholder Feedback Section -->
+        <div class="form-group" style="margin-top: 24px;">
+          <label>📊 Stakeholder Feedback</label>
+          <div class="input-hint" style="margin-bottom: 12px;">Collect feedback from key stakeholders</div>
+          
+          <div id="stakeholderFeedbackList" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Feedback items will be rendered here -->
+          </div>
+          
+          <button type="button" class="btn btn-primary" id="addStakeholderFeedback" style="margin-top: 12px;">+ Add Stakeholder Feedback</button>
+        </div>
+      </div>
+      
+      <div class="card-footer">
+        <div class="btn-group">
+          <button class="btn btn-primary" data-route="output">View Final Output →</button>
+          <button class="btn" data-route="acceptance">← Back to Acceptance Criteria</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function viewLibrary() {
   return `
     <div class="card">
@@ -2559,32 +2675,32 @@ function generateOutput() {
       lines.push("MoSCoW Prioritization:");
       lines.push("");
       
-      // Group by quadrant
+      // Group by quadrant (benefit = value, cost = effort)
       const mustHave = r.moscowPrioritization.filter(i => i.benefit > 5 && i.cost <= 5);
       const shouldHave = r.moscowPrioritization.filter(i => i.benefit > 5 && i.cost > 5);
       const couldHave = r.moscowPrioritization.filter(i => i.benefit <= 5 && i.cost <= 5);
       const wontHave = r.moscowPrioritization.filter(i => i.benefit <= 5 && i.cost > 5);
       
       if (mustHave.length > 0) {
-        lines.push("  MUST HAVE (High Value, Low Cost):");
+        lines.push("  MUST HAVE (High Value, Low Effort):");
         mustHave.forEach(item => lines.push(`    • ${item.name}`));
         lines.push("");
       }
       
       if (shouldHave.length > 0) {
-        lines.push("  SHOULD HAVE (High Value, High Cost):");
+        lines.push("  SHOULD HAVE (High Value, High Effort):");
         shouldHave.forEach(item => lines.push(`    • ${item.name}`));
         lines.push("");
       }
       
       if (couldHave.length > 0) {
-        lines.push("  COULD HAVE (Low Value, Low Cost):");
+        lines.push("  COULD HAVE (Low Value, Low Effort):");
         couldHave.forEach(item => lines.push(`    • ${item.name}`));
         lines.push("");
       }
       
       if (wontHave.length > 0) {
-        lines.push("  WON'T HAVE (Low Value, High Cost):");
+        lines.push("  WON'T HAVE (Low Value, High Effort):");
         wontHave.forEach(item => lines.push(`    • ${item.name}`));
         lines.push("");
       }
@@ -2649,6 +2765,48 @@ function generateOutput() {
       lines.push("Exceptions & Edge Cases:");
       lines.push(p.exceptions);
       lines.push("");
+    }
+  }
+  
+  // Retrospective
+  const retro = project?.retrospective;
+  if (retro && (retro.wentWell || retro.couldImprove || retro.learned || retro.puzzles || (retro.stakeholderFeedback && retro.stakeholderFeedback.length > 0))) {
+    lines.push("PROJECT RETROSPECTIVE");
+    lines.push("─────────────────────────────────────────────");
+    
+    if (retro.wentWell) {
+      lines.push("What Went Well:");
+      retro.wentWell.split('\n').filter(Boolean).forEach(line => lines.push(`  ${line}`));
+      lines.push("");
+    }
+    
+    if (retro.couldImprove) {
+      lines.push("What Could Be Improved:");
+      retro.couldImprove.split('\n').filter(Boolean).forEach(line => lines.push(`  ${line}`));
+      lines.push("");
+    }
+    
+    if (retro.learned) {
+      lines.push("What We Learned:");
+      retro.learned.split('\n').filter(Boolean).forEach(line => lines.push(`  ${line}`));
+      lines.push("");
+    }
+    
+    if (retro.puzzles) {
+      lines.push("What Still Puzzles Us:");
+      retro.puzzles.split('\n').filter(Boolean).forEach(line => lines.push(`  ${line}`));
+      lines.push("");
+    }
+    
+    if (retro.stakeholderFeedback && retro.stakeholderFeedback.length > 0) {
+      lines.push("Stakeholder Feedback:");
+      retro.stakeholderFeedback.forEach(fb => {
+        if (fb.stakeholder || fb.feedback) {
+          lines.push(`  ${fb.stakeholder || 'Anonymous'}:`);
+          lines.push(`    "${fb.feedback || 'No feedback provided'}"`);
+          lines.push("");
+        }
+      });
     }
   }
 
@@ -3969,6 +4127,27 @@ function loadSampleData() {
     exceptions: "Emergency appointments bypass normal booking (direct phone triage)\nWalk-ins are accommodated if <15min wait, otherwise directed to online booking\nCorporate/rescue accounts have special billing workflows (invoice, not card)\nAfter-hours bookings go to waitlist, confirmed next business day\nSystem downtime: staff use backup Google Calendar with manual sync when restored"
   };
   
+  sampleProject.retrospective = {
+    wentWell: "✅ Exceeded adoption targets - 78% of customers using online booking within first month\n✅ Staff reported 40% reduction in phone call volume\n✅ Payment processing integration went smoothly with zero downtime\n✅ Mobile app received 4.6/5 star rating from users\n✅ Stakeholder engagement was excellent throughout the project\n✅ Delivered 2 weeks ahead of original schedule",
+    couldImprove: "⚠️ Training took longer than expected - some staff needed extra sessions\n⚠️ Initial SMS reminder system had formatting issues (fixed in week 2)\n⚠️ Could have done more user testing before launch\n⚠️ Documentation for edge cases was incomplete at launch\n⚠️ Underestimated the change management effort required",
+    learned: "💡 Early prototype sessions with actual customers saved months of rework\n💡 Weekly check-ins with all stakeholders kept everyone aligned\n💡 Having a dedicated change champion on the staff made a huge difference\n💡 SMS reminders drove higher show-up rates than expected (92% vs 78% before)\n💡 Automated workflows freed up staff for higher-value customer interactions\n💡 Investing in good UX design pays off - customers love the interface",
+    puzzles: "❓ Why did older customers (65+) take longer to adopt than predicted?\n❓ How can we better measure the ROI of reduced phone time?\n❓ What caused the unexpected spike in after-hours booking attempts?\n❓ Could we have predicted the formatting issues in SMS earlier?",
+    stakeholderFeedback: [
+      {
+        stakeholder: "Samantha Chen",
+        feedback: "The new system has transformed how we operate. My team is so much more efficient and customers are happier. The mobile booking is a game-changer. Would love to see reporting features added next."
+      },
+      {
+        stakeholder: "Billy Roberts",
+        feedback: "Initial resistance from some clinic staff, but they came around quickly once they saw the benefits. The automated reminders alone have reduced no-shows significantly. Training could have been better structured."
+      },
+      {
+        stakeholder: "Dr. Emily Patterson",
+        feedback: "From a clinical perspective, having digital records instantly available is invaluable. The system is intuitive and hasn't disrupted patient care. My only concern is ensuring data privacy compliance as we scale."
+      }
+    ]
+  };
+  
   console.log("Saving state and rendering...");
   console.log("Total stakeholders:", sampleProject.stakeholders.length);
   
@@ -4266,6 +4445,7 @@ function renderMoscowChart(project) {
   if (!container) return;
   
   container.innerHTML = items.map((item, index) => {
+    // Use 'cost' for effort (X-axis) and 'benefit' for value (Y-axis)
     const xPercent = (item.cost / 10) * 100;
     const yPercent = 100 - ((item.benefit / 10) * 100); // Invert Y axis
     
@@ -4416,6 +4596,14 @@ function wireRequirementsPage() {
   // Render MoSCoW chart
   renderMoscowChart(project);
   
+  // Toggle MoSCoW chart visibility
+  document.getElementById('enableMoscow')?.addEventListener('change', (e) => {
+    const container = document.getElementById('moscowContainer');
+    if (container) {
+      container.style.display = e.target.checked ? 'block' : 'none';
+    }
+  });
+  
   // Add MoSCoW item button
   document.getElementById('addMoscowItem')?.addEventListener('click', () => {
     const name = prompt('Enter requirement name:');
@@ -4547,6 +4735,141 @@ function wireOutputPage() {
   });
 }
 
+function renderStakeholderFeedback(project) {
+  // Ensure retrospective and stakeholderFeedback exist
+  if (!project.retrospective) {
+    project.retrospective = DEFAULT_PROJECT.retrospective;
+  }
+  if (!project.retrospective.stakeholderFeedback) {
+    project.retrospective.stakeholderFeedback = [];
+  }
+  
+  const feedback = project.retrospective.stakeholderFeedback;
+  const container = document.getElementById("stakeholderFeedbackList");
+  
+  if (!container) return;
+  
+  if (feedback.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 20px; text-align: center; background: var(--bg-tertiary); border-radius: 8px; color: var(--text-muted);">
+        No stakeholder feedback collected yet. Click "+ Add Stakeholder Feedback" to begin.
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = feedback.map((item, index) => `
+    <div class="card" style="background: var(--bg-tertiary); padding: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+        <select 
+          class="input" 
+          data-feedback-index="${index}"
+          data-field="stakeholder"
+          style="flex: 1; margin-right: 12px;"
+        >
+          <option value="">Select stakeholder...</option>
+          ${(project.stakeholders || []).map(s => `
+            <option value="${escapeHtml(s.name)}" ${item.stakeholder === s.name ? 'selected' : ''}>
+              ${escapeHtml(s.name)} - ${escapeHtml(s.role)}
+            </option>
+          `).join('')}
+        </select>
+        <button class="btn btn-sm btn-danger" data-delete-feedback="${index}">Delete</button>
+      </div>
+      
+      <textarea 
+        class="input" 
+        placeholder="Their feedback on the project outcome..." 
+        data-feedback-index="${index}"
+        data-field="feedback"
+        style="min-height: 100px;"
+      >${escapeHtml(item.feedback || '')}</textarea>
+    </div>
+  `).join('');
+  
+  // Wire up events
+  wireStakeholderFeedback(project);
+}
+
+function wireStakeholderFeedback(project) {
+  // Stakeholder select change
+  document.querySelectorAll('[data-feedback-index][data-field="stakeholder"]').forEach(select => {
+    select.addEventListener('change', (e) => {
+      const index = parseInt(e.target.dataset.feedbackIndex);
+      project.retrospective.stakeholderFeedback[index].stakeholder = e.target.value;
+      saveState();
+    });
+  });
+  
+  // Feedback textarea change
+  document.querySelectorAll('[data-feedback-index][data-field="feedback"]').forEach(textarea => {
+    textarea.addEventListener('input', (e) => {
+      const index = parseInt(e.target.dataset.feedbackIndex);
+      project.retrospective.stakeholderFeedback[index].feedback = e.target.value;
+      saveState();
+    });
+  });
+  
+  // Delete feedback
+  document.querySelectorAll('[data-delete-feedback]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const index = parseInt(e.target.dataset.deleteFeedback);
+      if (confirm('Delete this feedback?')) {
+        project.retrospective.stakeholderFeedback.splice(index, 1);
+        saveState();
+        renderStakeholderFeedback(project);
+      }
+    });
+  });
+}
+
+function wireRetrospectivePage() {
+  const project = getActiveProject();
+  if (!project) return;
+  
+  // Ensure retrospective exists
+  if (!project.retrospective) {
+    project.retrospective = {
+      wentWell: "",
+      couldImprove: "",
+      learned: "",
+      puzzles: "",
+      stakeholderFeedback: []
+    };
+  }
+  
+  const fields = [
+    { id: "retroWentWell", key: "wentWell" },
+    { id: "retroCouldImprove", key: "couldImprove" },
+    { id: "retroLearned", key: "learned" },
+    { id: "retroPuzzles", key: "puzzles" }
+  ];
+  
+  fields.forEach(({ id, key }) => {
+    const el = document.getElementById(id);
+    el?.addEventListener("input", () => {
+      project.retrospective[key] = el.value;
+      saveState();
+    });
+  });
+  
+  // Render stakeholder feedback
+  renderStakeholderFeedback(project);
+  
+  // Add stakeholder feedback button
+  document.getElementById('addStakeholderFeedback')?.addEventListener('click', () => {
+    if (!project.retrospective.stakeholderFeedback) {
+      project.retrospective.stakeholderFeedback = [];
+    }
+    project.retrospective.stakeholderFeedback.push({
+      stakeholder: '',
+      feedback: ''
+    });
+    saveState();
+    renderStakeholderFeedback(project);
+  });
+}
+
 /* ============================================
    RENDER
    ============================================ */
@@ -4583,6 +4906,7 @@ function render() {
     case "acceptance": html = viewAcceptance(); break;
     case "process": html = viewProcess(); break;
     case "output": html = viewOutput(); break;
+    case "retrospective": html = viewRetrospective(); break;
     case "library": html = viewLibrary(); break;
     default: html = viewProjects();
   }
@@ -4598,6 +4922,7 @@ function render() {
     case "acceptance": wireAcceptancePage(); break;
     case "process": wireProcessPage(); break;
     case "output": wireOutputPage(); break;
+    case "retrospective": wireRetrospectivePage(); break;
   }
 }
 
