@@ -2593,6 +2593,36 @@ function viewLibrary() {
             <p>Present rationale, costs, benefits, and recommendations for proposed solutions</p>
           </div>
           
+          <div class="mini-card" id="makeOrBuyCard" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2rem; margin-bottom: 10px;">⚖️</div>
+            <h4>Make or Buy Analysis</h4>
+            <p>Compare costs and benefits of building in-house vs purchasing from a vendor</p>
+          </div>
+          
+          <div class="mini-card" id="benchmarkingCard" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2rem; margin-bottom: 10px;">📈</div>
+            <h4>Multi-Criteria Benchmarking</h4>
+            <p>Compare your solution against competitors across multiple features and criteria</p>
+          </div>
+          
+          <div class="mini-card" id="gapAnalysisCard" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2rem; margin-bottom: 10px;">🔍</div>
+            <h4>Gap Analysis</h4>
+            <p>Identify gaps between current and desired capabilities based on root causes</p>
+          </div>
+          
+          <div class="mini-card" id="riskRegisterCard" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2rem; margin-bottom: 10px;">⚠️</div>
+            <h4>Risk Register</h4>
+            <p>Identify, assess, and track project risks with probability, impact, and mitigation strategies</p>
+          </div>
+          
+          <div class="mini-card" id="swotAnalysisCard" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2rem; margin-bottom: 10px;">🎯</div>
+            <h4>SWOT Analysis</h4>
+            <p>Analyze Strengths, Weaknesses, Opportunities, and Threats for strategic planning</p>
+          </div>
+          
           <div class="mini-card" id="businessModelCanvasCard" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
             <div style="font-size: 2rem; margin-bottom: 10px;">🎨</div>
             <h4>Business Model Canvas</h4>
@@ -2615,12 +2645,6 @@ function viewLibrary() {
             <div style="font-size: 2rem; margin-bottom: 10px;">📝</div>
             <h4>Requirements Templates</h4>
             <p>User stories, acceptance criteria, NFRs</p>
-          </div>
-          
-          <div class="mini-card" style="opacity: 0.6;">
-            <div style="font-size: 2rem; margin-bottom: 10px;">🔄</div>
-            <h4>Process Mapping</h4>
-            <p>AS-IS/TO-BE documentation patterns</p>
           </div>
           
         </div>
@@ -6833,6 +6857,1003 @@ function wireRetrospectivePage() {
 }
 
 /* ============================================
+   MULTI-CRITERIA BENCHMARKING
+   ============================================ */
+function viewBenchmarking() {
+  const project = getActiveProject();
+  if (!project) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <p>Please create or select a project first.</p>
+          <button class="btn btn-primary" onclick="state.route='projects'; render();">Go to Projects</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Initialize benchmarking data if not exists
+  if (!project.benchmarking) {
+    project.benchmarking = {
+      processName: project.name || 'Product Analysis',
+      dateUpdated: new Date().toISOString().split('T')[0],
+      competitors: [
+        { id: 1, name: 'Your Product', rating: 10 },
+        { id: 2, name: 'Competitor A', rating: 9 },
+        { id: 3, name: 'Competitor B', rating: 6 },
+        { id: 4, name: 'Competitor C', rating: 7 }
+      ],
+      features: [
+        { id: 1, feature: 'User Profiles', scores: [true, false, false, false] },
+        { id: 2, feature: 'Search & Match', scores: [true, true, false, false] },
+        { id: 3, feature: 'Booking & Scheduling', scores: [true, true, false, true] },
+        { id: 4, feature: 'Payment Processing', scores: [true, true, true, false] },
+        { id: 5, feature: 'Ratings & Reviews', scores: [true, true, true, true] }
+      ]
+    };
+    saveState();
+  }
+  
+  const bm = project.benchmarking;
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📊 Multi-Criteria Benchmarking</h2>
+        <p class="card-subtitle">Compare your solution against competitors</p>
+      </div>
+      
+      <div class="card-body" style="max-width: 1400px;">
+        
+        <!-- Header Info -->
+        <div class="section">
+          <div class="grid grid-2" style="gap: 16px;">
+            <div class="form-group">
+              <label>Process/Product Name</label>
+              <input type="text" id="bmProcessName" value="${bm.processName}" class="input">
+            </div>
+            <div class="form-group">
+              <label>Date Updated</label>
+              <input type="date" id="bmDateUpdated" value="${bm.dateUpdated}" class="input">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Competitors Rating Row -->
+        <div class="section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0;">Competitors & Overall Rating</h3>
+            <button class="btn btn-sm" id="addCompetitor">+ Add Competitor</button>
+          </div>
+          
+          <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;">
+            ${bm.competitors.map((comp, idx) => `
+              <div style="min-width: 200px; padding: 16px; background: ${idx === 0 ? 'var(--primary)' : 'var(--bg-tertiary)'}; border-radius: 8px; text-align: center;">
+                <input type="text" class="input competitor-name" value="${comp.name}" data-idx="${idx}" style="text-align: center; font-weight: 600; margin-bottom: 8px; background: ${idx === 0 ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)'}; color: ${idx === 0 ? '#fff' : 'var(--text-primary)'};">
+                <div style="font-size: 0.75rem; margin-bottom: 4px; color: ${idx === 0 ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'};">Rating</div>
+                <input type="number" min="1" max="10" class="input competitor-rating" value="${comp.rating}" data-idx="${idx}" style="text-align: center; font-size: 1.5rem; font-weight: 700; background: ${idx === 0 ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)'}; color: ${idx === 0 ? '#fff' : 'var(--text-primary)'};">
+                ${idx > 0 ? `<button class="btn btn-sm delete-competitor" data-idx="${idx}" style="margin-top: 8px; width: 100%;">Remove</button>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <!-- Features Comparison Table -->
+        <div class="section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0;">Features Comparison</h3>
+            <button class="btn btn-sm" id="addFeature">+ Add Feature</button>
+          </div>
+          
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+              <thead>
+                <tr style="background: var(--bg-tertiary);">
+                  <th style="padding: 12px; text-align: left; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 200px;">Feature</th>
+                  ${bm.competitors.map((comp, idx) => `
+                    <th style="padding: 12px; text-align: center; border: 1px solid var(--border-color); background: ${idx === 0 ? 'var(--primary)' : 'var(--bg-tertiary)'}; color: ${idx === 0 ? '#fff' : 'var(--text-primary)'}; min-width: 120px;">${comp.name}</th>
+                  `).join('')}
+                  <th style="padding: 12px; text-align: center; border: 1px solid var(--border-color); color: var(--text-primary); width: 80px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${bm.features.map((feat, fIdx) => `
+                  <tr style="${fIdx % 2 === 0 ? 'background: var(--bg-secondary);' : ''}">
+                    <td style="padding: 10px; border: 1px solid var(--border-color);">
+                      <input type="text" class="input feature-name" value="${feat.feature}" data-idx="${fIdx}" style="width: 100%;">
+                    </td>
+                    ${bm.competitors.map((comp, cIdx) => `
+                      <td style="padding: 10px; border: 1px solid var(--border-color); text-align: center; background: ${cIdx === 0 ? 'rgba(99, 102, 241, 0.1)' : ''};">
+                        <input type="checkbox" class="feature-score" data-feat="${fIdx}" data-comp="${cIdx}" ${feat.scores[cIdx] ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;">
+                      </td>
+                    `).join('')}
+                    <td style="padding: 10px; border: 1px solid var(--border-color); text-align: center;">
+                      <button class="btn-icon delete-feature" data-idx="${fIdx}">🗑️</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Actions -->
+        <div style="display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+          <button class="btn btn-primary" id="saveBenchmarking">💾 Save Analysis</button>
+          <button class="btn" onclick="state.route='library'; render();">← Back to Library</button>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+function wireBenchmarkingPage() {
+  const project = getActiveProject();
+  if (!project || !project.benchmarking) return;
+  
+  const bm = project.benchmarking;
+  
+  // Save process name and date
+  document.getElementById('bmProcessName')?.addEventListener('change', (e) => {
+    bm.processName = e.target.value;
+    saveState();
+  });
+  
+  document.getElementById('bmDateUpdated')?.addEventListener('change', (e) => {
+    bm.dateUpdated = e.target.value;
+    saveState();
+  });
+  
+  // Save competitor names
+  document.querySelectorAll('.competitor-name').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      bm.competitors[idx].name = e.target.value;
+      saveState();
+      render(); // Re-render to update table headers
+    });
+  });
+  
+  // Save competitor ratings
+  document.querySelectorAll('.competitor-rating').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      bm.competitors[idx].rating = parseInt(e.target.value) || 5;
+      saveState();
+    });
+  });
+  
+  // Delete competitor
+  document.querySelectorAll('.delete-competitor').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      bm.competitors.splice(idx, 1);
+      // Remove corresponding scores from all features
+      bm.features.forEach(feat => {
+        feat.scores.splice(idx, 1);
+      });
+      saveState();
+      render();
+    });
+  });
+  
+  // Add competitor
+  document.getElementById('addCompetitor')?.addEventListener('click', () => {
+    bm.competitors.push({
+      id: bm.competitors.length + 1,
+      name: `Competitor ${bm.competitors.length}`,
+      rating: 5
+    });
+    // Add score column to all features
+    bm.features.forEach(feat => {
+      feat.scores.push(false);
+    });
+    saveState();
+    render();
+  });
+  
+  // Save feature names
+  document.querySelectorAll('.feature-name').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      bm.features[idx].feature = e.target.value;
+      saveState();
+    });
+  });
+  
+  // Toggle feature scores
+  document.querySelectorAll('.feature-score').forEach(checkbox => {
+    checkbox.addEventListener('change', (e) => {
+      const featIdx = parseInt(e.target.dataset.feat);
+      const compIdx = parseInt(e.target.dataset.comp);
+      bm.features[featIdx].scores[compIdx] = e.target.checked;
+      saveState();
+    });
+  });
+  
+  // Delete feature
+  document.querySelectorAll('.delete-feature').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      bm.features.splice(idx, 1);
+      saveState();
+      render();
+    });
+  });
+  
+  // Add feature
+  document.getElementById('addFeature')?.addEventListener('click', () => {
+    bm.features.push({
+      id: bm.features.length + 1,
+      feature: 'New Feature',
+      scores: new Array(bm.competitors.length).fill(false)
+    });
+    saveState();
+    render();
+  });
+  
+  // Save button
+  document.getElementById('saveBenchmarking')?.addEventListener('click', () => {
+    toast('Benchmarking Analysis saved!');
+  });
+}
+
+/* ============================================
+   GAP ANALYSIS
+   ============================================ */
+function viewGapAnalysis() {
+  const project = getActiveProject();
+  if (!project) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <p>Please create or select a project first.</p>
+          <button class="btn btn-primary" onclick="state.route='projects'; render();">Go to Projects</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Initialize gap analysis data if not exists
+  if (!project.gapAnalysis) {
+    project.gapAnalysis = {
+      issues: [
+        {
+          id: 1,
+          issue: "Pet Owners' Negative Feedback",
+          rootCauses: [
+            { cause: "Not adapted to their type of pets", current: "Supports dogs only", required: "Supports cats and birds" },
+            { cause: "Not enough communication during stay", current: "Single messaging platform", required: "Multi message platform" }
+          ]
+        },
+        {
+          id: 2,
+          issue: "Service Coverage Limitations",
+          rootCauses: [
+            { cause: "Limited geographic availability", current: "Urban areas only", required: "Suburban and rural coverage" }
+          ]
+        }
+      ]
+    };
+    saveState();
+  }
+  
+  const ga = project.gapAnalysis;
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">🔍 Gap Analysis</h2>
+        <p class="card-subtitle">Identify gaps between current and desired capabilities</p>
+      </div>
+      
+      <div class="card-body" style="max-width: 1400px;">
+        
+        <div style="margin-bottom: 24px; padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
+          <p style="margin: 0; color: var(--text-muted);">
+            <strong>Note:</strong> A Capability Table categorizes <strong>current and desired capabilities</strong>, based on <strong>root causes to a problem</strong>.
+          </p>
+        </div>
+        
+        <!-- Issues List -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="margin: 0;">Issues / Opportunities</h3>
+          <button class="btn btn-sm" id="addIssue">+ Add Issue</button>
+        </div>
+        
+        ${ga.issues.map((issue, issueIdx) => `
+          <div class="section" style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            
+            <!-- Issue Header -->
+            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+              <input type="text" class="input issue-name" value="${issue.issue}" data-idx="${issueIdx}" style="flex: 1; font-weight: 600; font-size: 1.1rem;">
+              <button class="btn-icon delete-issue" data-idx="${issueIdx}" title="Delete Issue">🗑️</button>
+            </div>
+            
+            <!-- Root Causes Table -->
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: var(--bg-tertiary);">
+                    <th style="padding: 12px; text-align: left; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 250px;">Root Cause</th>
+                    <th style="padding: 12px; text-align: left; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 200px;">Current Capabilities / Features</th>
+                    <th style="padding: 12px; text-align: left; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 200px;">Required Capabilities / Features</th>
+                    <th style="padding: 12px; text-align: center; border: 1px solid var(--border-color); color: var(--text-primary); width: 80px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${issue.rootCauses.map((rc, rcIdx) => `
+                    <tr>
+                      <td style="padding: 10px; border: 1px solid var(--border-color);">
+                        <textarea class="textarea root-cause" data-issue="${issueIdx}" data-idx="${rcIdx}" rows="2" style="width: 100%; min-height: 60px;">${rc.cause}</textarea>
+                      </td>
+                      <td style="padding: 10px; border: 1px solid var(--border-color); background: rgba(239, 68, 68, 0.1);">
+                        <textarea class="textarea current-cap" data-issue="${issueIdx}" data-idx="${rcIdx}" rows="2" style="width: 100%; min-height: 60px;">${rc.current}</textarea>
+                      </td>
+                      <td style="padding: 10px; border: 1px solid var(--border-color); background: rgba(34, 197, 94, 0.1);">
+                        <textarea class="textarea required-cap" data-issue="${issueIdx}" data-idx="${rcIdx}" rows="2" style="width: 100%; min-height: 60px;">${rc.required}</textarea>
+                      </td>
+                      <td style="padding: 10px; border: 1px solid var(--border-color); text-align: center;">
+                        <button class="btn-icon delete-root-cause" data-issue="${issueIdx}" data-idx="${rcIdx}">🗑️</button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            
+            <button class="btn btn-sm add-root-cause" data-issue="${issueIdx}" style="margin-top: 12px;">+ Add Root Cause</button>
+          </div>
+        `).join('')}
+        
+        <!-- Actions -->
+        <div style="display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+          <button class="btn btn-primary" id="saveGapAnalysis">💾 Save Analysis</button>
+          <button class="btn" onclick="state.route='library'; render();">← Back to Library</button>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+function wireGapAnalysisPage() {
+  const project = getActiveProject();
+  if (!project || !project.gapAnalysis) return;
+  
+  const ga = project.gapAnalysis;
+  
+  // Save issue names
+  document.querySelectorAll('.issue-name').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      ga.issues[idx].issue = e.target.value;
+      saveState();
+    });
+  });
+  
+  // Delete issue
+  document.querySelectorAll('.delete-issue').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      ga.issues.splice(idx, 1);
+      saveState();
+      render();
+    });
+  });
+  
+  // Add issue
+  document.getElementById('addIssue')?.addEventListener('click', () => {
+    ga.issues.push({
+      id: ga.issues.length + 1,
+      issue: 'New Issue or Opportunity',
+      rootCauses: [
+        { cause: 'Root Cause 1', current: 'Current Capability 1', required: 'Required Capability 1' }
+      ]
+    });
+    saveState();
+    render();
+  });
+  
+  // Save root cause
+  document.querySelectorAll('.root-cause').forEach(textarea => {
+    textarea.addEventListener('change', (e) => {
+      const issueIdx = parseInt(e.target.dataset.issue);
+      const rcIdx = parseInt(e.target.dataset.idx);
+      ga.issues[issueIdx].rootCauses[rcIdx].cause = e.target.value;
+      saveState();
+    });
+  });
+  
+  // Save current capability
+  document.querySelectorAll('.current-cap').forEach(textarea => {
+    textarea.addEventListener('change', (e) => {
+      const issueIdx = parseInt(e.target.dataset.issue);
+      const rcIdx = parseInt(e.target.dataset.idx);
+      ga.issues[issueIdx].rootCauses[rcIdx].current = e.target.value;
+      saveState();
+    });
+  });
+  
+  // Save required capability
+  document.querySelectorAll('.required-cap').forEach(textarea => {
+    textarea.addEventListener('change', (e) => {
+      const issueIdx = parseInt(e.target.dataset.issue);
+      const rcIdx = parseInt(e.target.dataset.idx);
+      ga.issues[issueIdx].rootCauses[rcIdx].required = e.target.value;
+      saveState();
+    });
+  });
+  
+  // Delete root cause
+  document.querySelectorAll('.delete-root-cause').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const issueIdx = parseInt(e.target.dataset.issue);
+      const rcIdx = parseInt(e.target.dataset.idx);
+      ga.issues[issueIdx].rootCauses.splice(rcIdx, 1);
+      saveState();
+      render();
+    });
+  });
+  
+  // Add root cause
+  document.querySelectorAll('.add-root-cause').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const issueIdx = parseInt(e.target.dataset.issue);
+      ga.issues[issueIdx].rootCauses.push({
+        cause: 'New Root Cause',
+        current: 'Current Capability',
+        required: 'Required Capability'
+      });
+      saveState();
+      render();
+    });
+  });
+  
+  // Save button
+  document.getElementById('saveGapAnalysis')?.addEventListener('click', () => {
+    toast('Gap Analysis saved!');
+  });
+}
+
+/* ============================================
+   RISK REGISTER
+   ============================================ */
+function viewRiskRegister() {
+  const project = getActiveProject();
+  if (!project) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <p>Please create or select a project first.</p>
+          <button class="btn btn-primary" onclick="state.route='projects'; render();">Go to Projects</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Initialize risk register data if not exists
+  if (!project.riskRegister) {
+    const today = new Date().toISOString().split('T')[0];
+    project.riskRegister = {
+      projectName: project.name || 'Project',
+      updatedBy: '',
+      dateUpdated: today,
+      risks: [
+        {
+          id: 1,
+          description: 'Market Competition Risk',
+          cause: 'Established competitors with strong brand recognition',
+          owner: 'Marketing Manager',
+          probability: 'Medium',
+          impact: 'Very Low',
+          rating: 'Sustainable',
+          response: 'Differentiate with unique features',
+          responseOwner: 'Product Manager',
+          residualProbability: 'Low',
+          residualImpact: 'Very Low',
+          residualRating: 'Sustainable'
+        },
+        {
+          id: 2,
+          description: 'Revenue Model Risk',
+          cause: 'Unclear pricing strategy',
+          owner: 'Finance Manager',
+          probability: 'Low',
+          impact: 'High',
+          rating: 'Severe',
+          response: 'Conduct market research',
+          responseOwner: 'Business Analyst',
+          residualProbability: 'Low',
+          residualImpact: 'High',
+          residualRating: 'Severe'
+        }
+      ]
+    };
+    saveState();
+  }
+  
+  const rr = project.riskRegister;
+  
+  // Helper to get rating color
+  const getRatingColor = (rating) => {
+    const colors = {
+      'Sustainable': '#4CAF50',
+      'Moderate': '#FFC107',
+      'Severe': '#FF9800',
+      'Critical': '#F44336'
+    };
+    return colors[rating] || '#9E9E9E';
+  };
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">⚠️ Risk Register</h2>
+        <p class="card-subtitle">Project: ${rr.projectName}</p>
+      </div>
+      
+      <div class="card-body" style="max-width: 100%;">
+        
+        <!-- Header Info -->
+        <div class="section">
+          <div class="grid grid-3" style="gap: 16px;">
+            <div class="form-group">
+              <label>Project/Area Name</label>
+              <input type="text" id="rrProjectName" value="${rr.projectName}" class="input">
+            </div>
+            <div class="form-group">
+              <label>Updated By</label>
+              <input type="text" id="rrUpdatedBy" value="${rr.updatedBy}" class="input" placeholder="Your name">
+            </div>
+            <div class="form-group">
+              <label>Date Last Updated</label>
+              <input type="date" id="rrDateUpdated" value="${rr.dateUpdated}" class="input">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Add Risk Button -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="margin: 0;">Risk Assessment</h3>
+          <button class="btn btn-sm" id="addRisk">+ Add Risk</button>
+        </div>
+        
+        <!-- Risks Table -->
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; min-width: 2000px; font-size: 0.85rem;">
+            <thead>
+              <tr style="background: var(--bg-tertiary);">
+                <th style="padding: 8px; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 40px;">#</th>
+                <th style="padding: 8px; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 200px;">Risk Description</th>
+                <th style="padding: 8px; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 180px;">Actual Event & Root Cause(s)</th>
+                <th style="padding: 8px; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 120px;">Risk Owner</th>
+                <th colspan="3" style="padding: 8px; border: 1px solid var(--border-color); background: rgba(255, 193, 7, 0.2); color: var(--text-primary); text-align: center;">Inherent Risk (without controls)</th>
+                <th style="padding: 8px; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 180px;">Risk Response</th>
+                <th style="padding: 8px; border: 1px solid var(--border-color); color: var(--text-primary); min-width: 120px;">Response Owner</th>
+                <th colspan="3" style="padding: 8px; border: 1px solid var(--border-color); background: rgba(76, 175, 80, 0.2); color: var(--text-primary); text-align: center;">Residual Risk (after control)</th>
+                <th style="padding: 8px; border: 1px solid var(--border-color); color: var(--text-primary); width: 80px;">Actions</th>
+              </tr>
+              <tr style="background: var(--bg-tertiary);">
+                <th colspan="4"></th>
+                <th style="padding: 4px 8px; border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem;">Probability</th>
+                <th style="padding: 4px 8px; border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem;">Impact</th>
+                <th style="padding: 4px 8px; border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem;">Rating</th>
+                <th colspan="2"></th>
+                <th style="padding: 4px 8px; border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem;">Probability</th>
+                <th style="padding: 4px 8px; border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem;">Impact</th>
+                <th style="padding: 4px 8px; border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem;">Rating</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rr.risks.map((risk, idx) => `
+                <tr style="${idx % 2 === 0 ? 'background: var(--bg-secondary);' : ''}">
+                  <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center; font-weight: 600;">${risk.id}</td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <textarea class="textarea risk-description" data-idx="${idx}" rows="2" style="width: 100%; min-height: 50px;">${risk.description}</textarea>
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <textarea class="textarea risk-cause" data-idx="${idx}" rows="2" style="width: 100%; min-height: 50px;">${risk.cause}</textarea>
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="text" class="input risk-owner" data-idx="${idx}" value="${risk.owner}" style="width: 100%;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color); background: rgba(255, 193, 7, 0.1);">
+                    <select class="input risk-probability" data-idx="${idx}" style="width: 100%; font-size: 0.8rem;">
+                      <option value="Very Low" ${risk.probability === 'Very Low' ? 'selected' : ''}>Very Low</option>
+                      <option value="Low" ${risk.probability === 'Low' ? 'selected' : ''}>Low</option>
+                      <option value="Medium" ${risk.probability === 'Medium' ? 'selected' : ''}>Medium</option>
+                      <option value="High" ${risk.probability === 'High' ? 'selected' : ''}>High</option>
+                      <option value="Very High" ${risk.probability === 'Very High' ? 'selected' : ''}>Very High</option>
+                    </select>
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color); background: rgba(255, 193, 7, 0.1);">
+                    <select class="input risk-impact" data-idx="${idx}" style="width: 100%; font-size: 0.8rem;">
+                      <option value="Very Low" ${risk.impact === 'Very Low' ? 'selected' : ''}>Very Low</option>
+                      <option value="Low" ${risk.impact === 'Low' ? 'selected' : ''}>Low</option>
+                      <option value="Medium" ${risk.impact === 'Medium' ? 'selected' : ''}>Medium</option>
+                      <option value="High" ${risk.impact === 'High' ? 'selected' : ''}>High</option>
+                      <option value="Very High" ${risk.impact === 'Very High' ? 'selected' : ''}>Very High</option>
+                    </select>
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color); background: ${getRatingColor(risk.rating)}20; text-align: center;">
+                    <select class="input risk-rating" data-idx="${idx}" style="width: 100%; font-size: 0.8rem; font-weight: 600; color: ${getRatingColor(risk.rating)};">
+                      <option value="Sustainable" ${risk.rating === 'Sustainable' ? 'selected' : ''}>Sustainable</option>
+                      <option value="Moderate" ${risk.rating === 'Moderate' ? 'selected' : ''}>Moderate</option>
+                      <option value="Severe" ${risk.rating === 'Severe' ? 'selected' : ''}>Severe</option>
+                      <option value="Critical" ${risk.rating === 'Critical' ? 'selected' : ''}>Critical</option>
+                    </select>
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <textarea class="textarea risk-response" data-idx="${idx}" rows="2" style="width: 100%; min-height: 50px;">${risk.response}</textarea>
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="text" class="input risk-response-owner" data-idx="${idx}" value="${risk.responseOwner}" style="width: 100%;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color); background: rgba(76, 175, 80, 0.1);">
+                    <select class="input risk-residual-probability" data-idx="${idx}" style="width: 100%; font-size: 0.8rem;">
+                      <option value="Very Low" ${risk.residualProbability === 'Very Low' ? 'selected' : ''}>Very Low</option>
+                      <option value="Low" ${risk.residualProbability === 'Low' ? 'selected' : ''}>Low</option>
+                      <option value="Medium" ${risk.residualProbability === 'Medium' ? 'selected' : ''}>Medium</option>
+                      <option value="High" ${risk.residualProbability === 'High' ? 'selected' : ''}>High</option>
+                      <option value="Very High" ${risk.residualProbability === 'Very High' ? 'selected' : ''}>Very High</option>
+                    </select>
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color); background: rgba(76, 175, 80, 0.1);">
+                    <select class="input risk-residual-impact" data-idx="${idx}" style="width: 100%; font-size: 0.8rem;">
+                      <option value="Very Low" ${risk.residualImpact === 'Very Low' ? 'selected' : ''}>Very Low</option>
+                      <option value="Low" ${risk.residualImpact === 'Low' ? 'selected' : ''}>Low</option>
+                      <option value="Medium" ${risk.residualImpact === 'Medium' ? 'selected' : ''}>Medium</option>
+                      <option value="High" ${risk.residualImpact === 'High' ? 'selected' : ''}>High</option>
+                      <option value="Very High" ${risk.residualImpact === 'Very High' ? 'selected' : ''}>Very High</option>
+                    </select>
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color); background: ${getRatingColor(risk.residualRating)}20; text-align: center;">
+                    <select class="input risk-residual-rating" data-idx="${idx}" style="width: 100%; font-size: 0.8rem; font-weight: 600; color: ${getRatingColor(risk.residualRating)};">
+                      <option value="Sustainable" ${risk.residualRating === 'Sustainable' ? 'selected' : ''}>Sustainable</option>
+                      <option value="Moderate" ${risk.residualRating === 'Moderate' ? 'selected' : ''}>Moderate</option>
+                      <option value="Severe" ${risk.residualRating === 'Severe' ? 'selected' : ''}>Severe</option>
+                      <option value="Critical" ${risk.residualRating === 'Critical' ? 'selected' : ''}>Critical</option>
+                    </select>
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center;">
+                    <button class="btn-icon delete-risk" data-idx="${idx}">🗑️</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Legend -->
+        <div style="margin-top: 20px; padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
+          <h4 style="margin: 0 0 12px 0;">Risk Rating Legend:</h4>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 20px; height: 20px; background: ${getRatingColor('Sustainable')}; border-radius: 4px;"></div>
+              <span>Sustainable - Low concern</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 20px; height: 20px; background: ${getRatingColor('Moderate')}; border-radius: 4px;"></div>
+              <span>Moderate - Monitor closely</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 20px; height: 20px; background: ${getRatingColor('Severe')}; border-radius: 4px;"></div>
+              <span>Severe - Needs mitigation</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 20px; height: 20px; background: ${getRatingColor('Critical')}; border-radius: 4px;"></div>
+              <span>Critical - Immediate action required</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Actions -->
+        <div style="display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+          <button class="btn btn-primary" id="saveRiskRegister">💾 Save Risk Register</button>
+          <button class="btn" onclick="state.route='library'; render();">← Back to Library</button>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+function wireRiskRegisterPage() {
+  const project = getActiveProject();
+  if (!project || !project.riskRegister) return;
+  
+  const rr = project.riskRegister;
+  
+  // Save header fields
+  document.getElementById('rrProjectName')?.addEventListener('change', (e) => {
+    rr.projectName = e.target.value;
+    saveState();
+  });
+  
+  document.getElementById('rrUpdatedBy')?.addEventListener('change', (e) => {
+    rr.updatedBy = e.target.value;
+    saveState();
+  });
+  
+  document.getElementById('rrDateUpdated')?.addEventListener('change', (e) => {
+    rr.dateUpdated = e.target.value;
+    saveState();
+  });
+  
+  // Save risk fields
+  const fields = [
+    'description', 'cause', 'owner', 'probability', 'impact', 'rating',
+    'response', 'responseOwner', 'residualProbability', 'residualImpact', 'residualRating'
+  ];
+  
+  fields.forEach(field => {
+    document.querySelectorAll(`.risk-${field.replace(/([A-Z])/g, '-$1').toLowerCase()}`).forEach(input => {
+      input.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        rr.risks[idx][field] = e.target.value;
+        saveState();
+        render(); // Re-render to update colors
+      });
+    });
+  });
+  
+  // Delete risk
+  document.querySelectorAll('.delete-risk').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      rr.risks.splice(idx, 1);
+      // Renumber risks
+      rr.risks.forEach((r, i) => r.id = i + 1);
+      saveState();
+      render();
+    });
+  });
+  
+  // Add risk
+  document.getElementById('addRisk')?.addEventListener('click', () => {
+    rr.risks.push({
+      id: rr.risks.length + 1,
+      description: 'New Risk',
+      cause: 'Root cause description',
+      owner: 'Owner Name',
+      probability: 'Medium',
+      impact: 'Medium',
+      rating: 'Moderate',
+      response: 'Mitigation strategy',
+      responseOwner: 'Response Owner',
+      residualProbability: 'Low',
+      residualImpact: 'Low',
+      residualRating: 'Sustainable'
+    });
+    saveState();
+    render();
+  });
+  
+  // Save button
+  document.getElementById('saveRiskRegister')?.addEventListener('click', () => {
+    toast('Risk Register saved!');
+  });
+}
+
+/* ============================================
+   SWOT ANALYSIS
+   ============================================ */
+function viewSwotAnalysis() {
+  const project = getActiveProject();
+  if (!project) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <p>Please create or select a project first.</p>
+          <button class="btn btn-primary" onclick="state.route='projects'; render();">Go to Projects</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Initialize SWOT data if not exists
+  if (!project.swotAnalysis) {
+    project.swotAnalysis = {
+      organizationTeam: project.name || 'Organization/Team',
+      strengths: [
+        'Unique business model - tapping into new markets',
+        'Exciting pet care expertise from Samantha',
+        'Scalable platform - beyond one location',
+        'Targeted marketing for pet sitters and pet owners'
+      ],
+      weaknesses: [
+        'Reliance on Samantha\'s Personal Brand',
+        'Limited initial features',
+        'User trust and safety concerns for pets',
+        'Technical challenges for matching seamlessly'
+      ],
+      opportunities: [
+        'The pet care industry is booming, with more pet owners willing to spend on quality services',
+        'Collaborating with pet-related businesses (e.g. pet stores, grooming salons)',
+        'Expand pet sitting: there\'s potential to expand into other pet services like walking, training, and grooming',
+        'Launching a referral program for pet sitters and owners can boost early adoption'
+      ],
+      threats: [
+        'Major players like Rover and Wag already dominate the pet sitting market',
+        'Economic downturns could reduce spending, particularly in ensuring other qualified owners bring in background checks',
+        'In a downturn, pet owners might cut back on non-essential spending, reducing demand for the app\'s services',
+        'Keeping users engaged with the app after the initial match could be challenging, particularly if the experience isn\'t consistently positive'
+      ]
+    };
+    saveState();
+  }
+  
+  const swot = project.swotAnalysis;
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">🎯 SWOT Analysis</h2>
+        <p class="card-subtitle">Strategic analysis of internal and external factors</p>
+      </div>
+      
+      <div class="card-body" style="max-width: 1400px;">
+        
+        <!-- Organization/Team Name -->
+        <div class="section">
+          <div class="form-group">
+            <label>Organization or Team</label>
+            <input type="text" id="swotOrg" value="${swot.organizationTeam}" class="input" style="max-width: 500px;">
+          </div>
+        </div>
+        
+        <!-- SWOT Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px;">
+          
+          <!-- Strengths (Internal - Positive) -->
+          <div style="background: linear-gradient(135deg, #D4EDDA 0%, #C3E6CB 100%); border: 2px solid #28a745; border-radius: 12px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <h3 style="margin: 0; color: #155724; font-size: 1.3rem;">💪 Strengths</h3>
+                <p style="margin: 4px 0 0 0; color: #155724; opacity: 0.8; font-size: 0.85rem;">Internal • Positive</p>
+              </div>
+              <button class="btn btn-sm add-strength" style="background: #28a745; color: white;">+ Add</button>
+            </div>
+            <div id="strengthsList">
+              ${swot.strengths.map((item, idx) => `
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;">
+                  <span style="color: #155724; margin-top: 8px; font-weight: 600;">${idx + 1}.</span>
+                  <textarea class="textarea strength-item" data-idx="${idx}" rows="2" style="flex: 1; background: white; border: 1px solid #28a745; color: #000;">${item}</textarea>
+                  <button class="btn-icon delete-strength" data-idx="${idx}" style="margin-top: 4px;">🗑️</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- Weaknesses (Internal - Negative) -->
+          <div style="background: linear-gradient(135deg, #F8D7DA 0%, #F5C6CB 100%); border: 2px solid #dc3545; border-radius: 12px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <h3 style="margin: 0; color: #721c24; font-size: 1.3rem;">⚡ Weaknesses</h3>
+                <p style="margin: 4px 0 0 0; color: #721c24; opacity: 0.8; font-size: 0.85rem;">Internal • Negative</p>
+              </div>
+              <button class="btn btn-sm add-weakness" style="background: #dc3545; color: white;">+ Add</button>
+            </div>
+            <div id="weaknessesList">
+              ${swot.weaknesses.map((item, idx) => `
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;">
+                  <span style="color: #721c24; margin-top: 8px; font-weight: 600;">${idx + 1}.</span>
+                  <textarea class="textarea weakness-item" data-idx="${idx}" rows="2" style="flex: 1; background: white; border: 1px solid #dc3545; color: #000;">${item}</textarea>
+                  <button class="btn-icon delete-weakness" data-idx="${idx}" style="margin-top: 4px;">🗑️</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- Opportunities (External - Positive) -->
+          <div style="background: linear-gradient(135deg, #D1ECF1 0%, #BEE5EB 100%); border: 2px solid #17a2b8; border-radius: 12px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <h3 style="margin: 0; color: #0c5460; font-size: 1.3rem;">🌟 Opportunities</h3>
+                <p style="margin: 4px 0 0 0; color: #0c5460; opacity: 0.8; font-size: 0.85rem;">External • Positive</p>
+              </div>
+              <button class="btn btn-sm add-opportunity" style="background: #17a2b8; color: white;">+ Add</button>
+            </div>
+            <div id="opportunitiesList">
+              ${swot.opportunities.map((item, idx) => `
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;">
+                  <span style="color: #0c5460; margin-top: 8px; font-weight: 600;">${idx + 1}.</span>
+                  <textarea class="textarea opportunity-item" data-idx="${idx}" rows="2" style="flex: 1; background: white; border: 1px solid #17a2b8; color: #000;">${item}</textarea>
+                  <button class="btn-icon delete-opportunity" data-idx="${idx}" style="margin-top: 4px;">🗑️</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- Threats (External - Negative) -->
+          <div style="background: linear-gradient(135deg, #FFF3CD 0%, #FFEAA7 100%); border: 2px solid #ffc107; border-radius: 12px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <h3 style="margin: 0; color: #856404; font-size: 1.3rem;">⚠️ Threats</h3>
+                <p style="margin: 4px 0 0 0; color: #856404; opacity: 0.8; font-size: 0.85rem;">External • Negative</p>
+              </div>
+              <button class="btn btn-sm add-threat" style="background: #ffc107; color: #000;">+ Add</button>
+            </div>
+            <div id="threatsList">
+              ${swot.threats.map((item, idx) => `
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;">
+                  <span style="color: #856404; margin-top: 8px; font-weight: 600;">${idx + 1}.</span>
+                  <textarea class="textarea threat-item" data-idx="${idx}" rows="2" style="flex: 1; background: white; border: 1px solid #ffc107; color: #000;">${item}</textarea>
+                  <button class="btn-icon delete-threat" data-idx="${idx}" style="margin-top: 4px;">🗑️</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+        </div>
+        
+        <!-- Actions -->
+        <div style="display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+          <button class="btn btn-primary" id="saveSwot">💾 Save SWOT Analysis</button>
+          <button class="btn" onclick="state.route='library'; render();">← Back to Library</button>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+function wireSwotAnalysisPage() {
+  const project = getActiveProject();
+  if (!project || !project.swotAnalysis) return;
+  
+  const swot = project.swotAnalysis;
+  
+  // Save organization name
+  document.getElementById('swotOrg')?.addEventListener('change', (e) => {
+    swot.organizationTeam = e.target.value;
+    saveState();
+  });
+  
+  // Helper function for CRUD operations
+  const setupCategory = (category, categoryKey) => {
+    // Save items
+    document.querySelectorAll(`.${category}-item`).forEach(textarea => {
+      textarea.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        swot[categoryKey][idx] = e.target.value;
+        saveState();
+      });
+    });
+    
+    // Delete items
+    document.querySelectorAll(`.delete-${category}`).forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        swot[categoryKey].splice(idx, 1);
+        saveState();
+        render();
+      });
+    });
+    
+    // Add items
+    document.querySelector(`.add-${category}`)?.addEventListener('click', () => {
+      swot[categoryKey].push(`New ${category.charAt(0).toUpperCase() + category.slice(1)}`);
+      saveState();
+      render();
+    });
+  };
+  
+  setupCategory('strength', 'strengths');
+  setupCategory('weakness', 'weaknesses');
+  setupCategory('opportunity', 'opportunities');
+  setupCategory('threat', 'threats');
+  
+  // Save button
+  document.getElementById('saveSwot')?.addEventListener('click', () => {
+    toast('SWOT Analysis saved!');
+  });
+}
+
+/* ============================================
    RENDER
    ============================================ */
 /* ============================================
@@ -6866,7 +7887,7 @@ function viewBusinessModelCanvas() {
       costStructure: '',
       revenueStreams: ''
     };
-    saveProjects();
+    saveState();
   }
   
   const bmc = project.businessModelCanvas;
@@ -7000,7 +8021,7 @@ function wireBusinessModelCanvasPage() {
     document.getElementById(id)?.addEventListener('change', (e) => {
       const field = id.replace('bmc', '').charAt(0).toLowerCase() + id.replace('bmc', '').slice(1);
       bmc[field] = e.target.value;
-      saveProjects();
+      saveState();
     });
   });
   
@@ -7054,6 +8075,11 @@ function render() {
     case "retrospective": html = viewRetrospective(); break;
     case "library": html = viewLibrary(); break;
     case "businessCase": html = viewBusinessCase(); break;
+    case "makeOrBuy": html = viewMakeOrBuy(); break;
+    case "benchmarking": html = viewBenchmarking(); break;
+    case "gapAnalysis": html = viewGapAnalysis(); break;
+    case "riskRegister": html = viewRiskRegister(); break;
+    case "swotAnalysis": html = viewSwotAnalysis(); break;
     case "businessModelCanvas": html = viewBusinessModelCanvas(); break;
     default: html = viewProjects();
   }
@@ -7072,6 +8098,11 @@ function render() {
     case "retrospective": wireRetrospectivePage(); break;
     case "library": wireLibraryPage(); break;
     case "businessCase": wireBusinessCasePage(); break;
+    case "makeOrBuy": wireMakeOrBuyPage(); break;
+    case "benchmarking": wireBenchmarkingPage(); break;
+    case "gapAnalysis": wireGapAnalysisPage(); break;
+    case "riskRegister": wireRiskRegisterPage(); break;
+    case "swotAnalysis": wireSwotAnalysisPage(); break;
     case "businessModelCanvas": wireBusinessModelCanvasPage(); break;
   }
 }
@@ -7079,6 +8110,31 @@ function render() {
 function wireLibraryPage() {
   document.getElementById('businessCaseCard')?.addEventListener('click', () => {
     state.route = 'businessCase';
+    render();
+  });
+  
+  document.getElementById('makeOrBuyCard')?.addEventListener('click', () => {
+    state.route = 'makeOrBuy';
+    render();
+  });
+  
+  document.getElementById('benchmarkingCard')?.addEventListener('click', () => {
+    state.route = 'benchmarking';
+    render();
+  });
+  
+  document.getElementById('gapAnalysisCard')?.addEventListener('click', () => {
+    state.route = 'gapAnalysis';
+    render();
+  });
+  
+  document.getElementById('riskRegisterCard')?.addEventListener('click', () => {
+    state.route = 'riskRegister';
+    render();
+  });
+  
+  document.getElementById('swotAnalysisCard')?.addEventListener('click', () => {
+    state.route = 'swotAnalysis';
     render();
   });
   
@@ -7120,7 +8176,7 @@ function viewBusinessCase() {
         'Consider ongoing technical support or bring it in-house.'
       ]
     };
-    saveProjects();
+    saveState();
   }
   
   const bc = project.businessCase;
@@ -7253,7 +8309,7 @@ function wireBusinessCasePage() {
     document.getElementById(id)?.addEventListener('change', (e) => {
       const field = id.replace('bc', '').charAt(0).toLowerCase() + id.replace('bc', '').slice(1);
       bc[field] = e.target.value;
-      saveProjects();
+      saveState();
     });
   });
   
@@ -7263,7 +8319,7 @@ function wireBusinessCasePage() {
       const idx = parseInt(e.target.dataset.idx);
       const field = e.target.dataset.field;
       bc.solutions[idx][field] = e.target.value;
-      saveProjects();
+      saveState();
     });
   });
   
@@ -7274,7 +8330,7 @@ function wireBusinessCasePage() {
       bc.solutions.splice(idx, 1);
       // Renumber
       bc.solutions.forEach((sol, i) => sol.id = i + 1);
-      saveProjects();
+      saveState();
       render();
     });
   });
@@ -7286,7 +8342,7 @@ function wireBusinessCasePage() {
       option: 'New Solution Option',
       priority: 'D'
     });
-    saveProjects();
+    saveState();
     render();
   });
   
@@ -7295,7 +8351,7 @@ function wireBusinessCasePage() {
     input.addEventListener('change', (e) => {
       const idx = parseInt(e.target.dataset.recIdx);
       bc.recommendations[idx] = e.target.value;
-      saveProjects();
+      saveState();
     });
   });
   
@@ -7304,7 +8360,7 @@ function wireBusinessCasePage() {
     btn.addEventListener('click', (e) => {
       const idx = parseInt(e.target.dataset.deleteRec);
       bc.recommendations.splice(idx, 1);
-      saveProjects();
+      saveState();
       render();
     });
   });
@@ -7312,7 +8368,7 @@ function wireBusinessCasePage() {
   // Add recommendation
   document.getElementById('addRecommendation')?.addEventListener('click', () => {
     bc.recommendations.push('New recommendation...');
-    saveProjects();
+    saveState();
     render();
   });
   
@@ -7324,6 +8380,260 @@ function wireBusinessCasePage() {
   // Generate PDF
   document.getElementById('generateBusinessCasePDF')?.addEventListener('click', () => {
     generateBusinessCasePDF();
+  });
+}
+
+/* ============================================
+   MAKE OR BUY ANALYSIS
+   ============================================ */
+function viewMakeOrBuy() {
+  const project = getActiveProject();
+  if (!project) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <p>Please create or select a project first.</p>
+          <button class="btn btn-primary" onclick="state.route='projects'; render();">Go to Projects</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Initialize make or buy data if not exists
+  if (!project.makeOrBuy) {
+    project.makeOrBuy = {
+      makeItems: [
+        { id: 1, item: 'Developers', initial: 480000, year1: 250000, year2: 250000 },
+        { id: 2, item: 'Business Integration', initial: 150000, year1: 0, year2: 0 },
+        { id: 3, item: 'Senior User', initial: 50000, year1: 0, year2: 0 },
+        { id: 4, item: 'Project Manager', initial: 100000, year1: 100000, year2: 100000 },
+        { id: 5, item: 'Payment Systems', initial: 20000, year1: 100000, year2: 100000 }
+      ],
+      buyItems: [
+        { id: 1, item: 'Initial contract', initial: 400000, year1: 100000, year2: 0 },
+        { id: 2, item: 'System cost', initial: 200000, year1: 200000, year2: 300000 },
+        { id: 3, item: 'Other Costs', initial: 0, year1: 100000, year2: 200000 },
+        { id: 4, item: 'Ongoing fees', initial: 0, year1: 50000, year2: 100000 },
+        { id: 5, item: 'Ongoing maintenance', initial: 0, year1: 50000, year2: 50000 }
+      ]
+    };
+    saveState();
+  }
+  
+  const mob = project.makeOrBuy;
+  
+  // Calculate totals
+  const makeTotals = {
+    initial: mob.makeItems.reduce((sum, item) => sum + (parseFloat(item.initial) || 0), 0),
+    year1: mob.makeItems.reduce((sum, item) => sum + (parseFloat(item.year1) || 0), 0),
+    year2: mob.makeItems.reduce((sum, item) => sum + (parseFloat(item.year2) || 0), 0)
+  };
+  makeTotals.total = makeTotals.initial + makeTotals.year1 + makeTotals.year2;
+  
+  const buyTotals = {
+    initial: mob.buyItems.reduce((sum, item) => sum + (parseFloat(item.initial) || 0), 0),
+    year1: mob.buyItems.reduce((sum, item) => sum + (parseFloat(item.year1) || 0), 0),
+    year2: mob.buyItems.reduce((sum, item) => sum + (parseFloat(item.year2) || 0), 0)
+  };
+  buyTotals.total = buyTotals.initial + buyTotals.year1 + buyTotals.year2;
+  
+  const recommendation = makeTotals.total < buyTotals.total ? 'Make' : 'Buy';
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">⚖️ Make or Buy Analysis</h2>
+        <p class="card-subtitle">Project: ${project.name || 'Untitled'} | Most Cost-Effective: <strong>${recommendation}</strong></p>
+      </div>
+      
+      <div class="card-body" style="max-width: 1200px;">
+        
+        <!-- Cost to Make Table -->
+        <div class="section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0; padding: 8px 12px; background: #FFF9C4; color: #1a1a1a; border-radius: 4px; font-weight: 600;">Cost to Make</h3>
+            <button class="btn btn-sm" id="addMakeItem">+ Add Item</button>
+          </div>
+          
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: var(--bg-tertiary);">
+                <th style="padding: 10px; text-align: left; border: 1px solid var(--border-color); color: var(--text-primary);">Item</th>
+                <th style="padding: 10px; text-align: right; border: 1px solid var(--border-color); width: 150px; color: var(--text-primary);">Initial</th>
+                <th style="padding: 10px; text-align: right; border: 1px solid var(--border-color); width: 150px; color: var(--text-primary);">Year 1</th>
+                <th style="padding: 10px; text-align: right; border: 1px solid var(--border-color); width: 150px; color: var(--text-primary);">Year 2</th>
+                <th style="padding: 10px; text-align: center; border: 1px solid var(--border-color); width: 60px; color: var(--text-primary);">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${mob.makeItems.map((item, idx) => `
+                <tr>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="text" class="input make-item" value="${item.item}" data-idx="${idx}" data-field="item" style="width: 100%;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="number" class="input make-item" value="${item.initial}" data-idx="${idx}" data-field="initial" style="width: 100%; text-align: right;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="number" class="input make-item" value="${item.year1}" data-idx="${idx}" data-field="year1" style="width: 100%; text-align: right;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="number" class="input make-item" value="${item.year2}" data-idx="${idx}" data-field="year2" style="width: 100%; text-align: right;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center;">
+                    <button class="btn-icon delete-make" data-idx="${idx}">🗑️</button>
+                  </td>
+                </tr>
+              `).join('')}
+              <tr style="background: var(--bg-tertiary); font-weight: 600;">
+                <td style="padding: 10px; border: 1px solid var(--border-color); color: var(--text-primary);">TOTAL</td>
+                <td style="padding: 10px; border: 1px solid var(--border-color); text-align: right; color: var(--text-primary);">$${makeTotals.initial.toLocaleString()}</td>
+                <td style="padding: 10px; border: 1px solid var(--border-color); text-align: right; color: var(--text-primary);">$${makeTotals.year1.toLocaleString()}</td>
+                <td style="padding: 10px; border: 1px solid var(--border-color); text-align: right; color: var(--text-primary);">$${makeTotals.year2.toLocaleString()}</td>
+                <td style="padding: 10px; border: 1px solid var(--border-color); text-align: right; background: #4CAF50; color: #fff; font-weight: 700;">$${makeTotals.total.toLocaleString()}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Cost to Buy Table -->
+        <div class="section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0; padding: 8px 12px; background: #BBDEFB; color: #1a1a1a; border-radius: 4px; font-weight: 600;">Cost to Buy</h3>
+            <button class="btn btn-sm" id="addBuyItem">+ Add Item</button>
+          </div>
+          
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: var(--bg-tertiary);">
+                <th style="padding: 10px; text-align: left; border: 1px solid var(--border-color); color: var(--text-primary);">Item</th>
+                <th style="padding: 10px; text-align: right; border: 1px solid var(--border-color); width: 150px; color: var(--text-primary);">Initial</th>
+                <th style="padding: 10px; text-align: right; border: 1px solid var(--border-color); width: 150px; color: var(--text-primary);">Year 1</th>
+                <th style="padding: 10px; text-align: right; border: 1px solid var(--border-color); width: 150px; color: var(--text-primary);">Year 2</th>
+                <th style="padding: 10px; text-align: center; border: 1px solid var(--border-color); width: 60px; color: var(--text-primary);">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${mob.buyItems.map((item, idx) => `
+                <tr>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="text" class="input buy-item" value="${item.item}" data-idx="${idx}" data-field="item" style="width: 100%;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="number" class="input buy-item" value="${item.initial}" data-idx="${idx}" data-field="initial" style="width: 100%; text-align: right;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="number" class="input buy-item" value="${item.year1}" data-idx="${idx}" data-field="year1" style="width: 100%; text-align: right;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color);">
+                    <input type="number" class="input buy-item" value="${item.year2}" data-idx="${idx}" data-field="year2" style="width: 100%; text-align: right;">
+                  </td>
+                  <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center;">
+                    <button class="btn-icon delete-buy" data-idx="${idx}">🗑️</button>
+                  </td>
+                </tr>
+              `).join('')}
+              <tr style="background: var(--bg-tertiary); font-weight: 600;">
+                <td style="padding: 10px; border: 1px solid var(--border-color); color: var(--text-primary);">TOTAL</td>
+                <td style="padding: 10px; border: 1px solid var(--border-color); text-align: right; color: var(--text-primary);">$${buyTotals.initial.toLocaleString()}</td>
+                <td style="padding: 10px; border: 1px solid var(--border-color); text-align: right; color: var(--text-primary);">$${buyTotals.year1.toLocaleString()}</td>
+                <td style="padding: 10px; border: 1px solid var(--border-color); text-align: right; color: var(--text-primary);">$${buyTotals.year2.toLocaleString()}</td>
+                <td style="padding: 10px; border: 1px solid var(--border-color); text-align: right; background: #4CAF50; color: #fff; font-weight: 700;">$${buyTotals.total.toLocaleString()}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Actions -->
+        <div style="display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+          <button class="btn btn-primary" id="saveMakeOrBuy">💾 Save Analysis</button>
+          <button class="btn" onclick="state.route='library'; render();">← Back to Library</button>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+function wireMakeOrBuyPage() {
+  const project = getActiveProject();
+  if (!project || !project.makeOrBuy) return;
+  
+  const mob = project.makeOrBuy;
+  
+  // Save make item changes
+  document.querySelectorAll('.make-item').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      const field = e.target.dataset.field;
+      mob.makeItems[idx][field] = field === 'item' ? e.target.value : parseFloat(e.target.value) || 0;
+      saveState();
+      render();
+    });
+  });
+  
+  // Save buy item changes
+  document.querySelectorAll('.buy-item').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      const field = e.target.dataset.field;
+      mob.buyItems[idx][field] = field === 'item' ? e.target.value : parseFloat(e.target.value) || 0;
+      saveState();
+      render();
+    });
+  });
+  
+  // Delete make item
+  document.querySelectorAll('.delete-make').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      mob.makeItems.splice(idx, 1);
+      mob.makeItems.forEach((item, i) => item.id = i + 1);
+      saveState();
+      render();
+    });
+  });
+  
+  // Delete buy item
+  document.querySelectorAll('.delete-buy').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      mob.buyItems.splice(idx, 1);
+      mob.buyItems.forEach((item, i) => item.id = i + 1);
+      saveState();
+      render();
+    });
+  });
+  
+  // Add make item
+  document.getElementById('addMakeItem')?.addEventListener('click', () => {
+    mob.makeItems.push({
+      id: mob.makeItems.length + 1,
+      item: 'New Item',
+      initial: 0,
+      year1: 0,
+      year2: 0
+    });
+    saveState();
+    render();
+  });
+  
+  // Add buy item
+  document.getElementById('addBuyItem')?.addEventListener('click', () => {
+    mob.buyItems.push({
+      id: mob.buyItems.length + 1,
+      item: 'New Item',
+      initial: 0,
+      year1: 0,
+      year2: 0
+    });
+    saveState();
+    render();
+  });
+  
+  // Save button
+  document.getElementById('saveMakeOrBuy')?.addEventListener('click', () => {
+    toast('Make or Buy Analysis saved!');
   });
 }
 
@@ -7358,7 +8668,7 @@ function viewBusinessModelCanvas() {
       costStructure: '',
       revenueStreams: ''
     };
-    saveProjects();
+    saveState();
   }
   
   const bmc = project.businessModelCanvas;
@@ -7502,7 +8812,7 @@ function wireBusinessModelCanvasPage() {
     document.getElementById(id)?.addEventListener('change', (e) => {
       const field = id.replace('bmc', '').charAt(0).toLowerCase() + id.replace('bmc', '').slice(1);
       bmc[field] = e.target.value;
-      saveProjects();
+      saveState();
     });
   });
   
