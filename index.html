@@ -1100,9 +1100,10 @@ font-size: 1rem;
     <nav class="nav">
       <button class="nav-btn" data-route="projects">Projects</button>
       <button class="nav-btn active" data-route="home">Project Outline</button>
+      <button class="nav-btn" data-route="businessCase">Business Case</button>
       <button class="nav-btn" data-route="stakeholders">Stakeholders</button>
-      <button class="nav-btn" data-route="requirements">Requirements</button>
       <button class="nav-btn" data-route="process">Process</button>
+      <button class="nav-btn" data-route="requirements">Requirements</button>
       <button class="nav-btn" data-route="acceptance">Acceptance Criteria</button>
       <button class="nav-btn" data-route="output">Output</button>
       <button class="nav-btn" data-route="retrospective">Retrospective</button>
@@ -2468,6 +2469,7 @@ function viewOutput() {
         </div>
 
         <div class="btn-group">
+          <button class="btn btn-primary" id="exportPDF">📄 Export as PDF</button>
           <button class="btn" id="exportProject">Export Project (JSON)</button>
           <button class="btn" id="importProject">Import Project</button>
           <input type="file" id="importFile" accept=".json" style="display: none;" />
@@ -2579,24 +2581,48 @@ function viewLibrary() {
   return `
     <div class="card">
       <div class="card-header">
-        <h2 class="card-title">BA Library</h2>
-        <p class="card-subtitle">Templates, examples, and reference materials</p>
+        <h2 class="card-title">BA Library & Templates</h2>
+        <p class="card-subtitle">Ready-to-use templates and downloadable documents</p>
       </div>
       <div class="card-body">
         <div class="grid grid-3">
-          ${[
-            { title: "Stakeholder Analysis", desc: "How to map influence and engagement" },
-            { title: "Requirements Templates", desc: "User stories, acceptance criteria, NFRs" },
-            { title: "Process Mapping", desc: "AS-IS/TO-BE documentation patterns" },
-            { title: "Meeting Prep", desc: "Discovery, validation, and decision sessions" },
-            { title: "UAT Planning", desc: "Test scenarios and sign-off criteria" },
-            { title: "Common Mistakes", desc: "Anti-patterns to avoid" }
-          ].map(item => `
-            <div class="mini-card">
-              <h4>${item.title}</h4>
-              <p>${item.desc}</p>
-            </div>
-          `).join("")}
+          
+          <div class="mini-card" id="businessCaseCard" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
+            <h4>Business Case</h4>
+            <p>Present rationale, costs, benefits, and recommendations for proposed solutions</p>
+          </div>
+          
+          <div class="mini-card" id="businessModelCanvasCard" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="font-size: 2rem; margin-bottom: 10px;">🎨</div>
+            <h4>Business Model Canvas</h4>
+            <p>Visual strategic planning tool showing key partners, activities, value propositions, and revenue streams</p>
+          </div>
+          
+          <div class="mini-card" style="opacity: 0.6;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">👥</div>
+            <h4>Stakeholder Register</h4>
+            <p>Export current project stakeholders</p>
+          </div>
+          
+          <div class="mini-card" style="opacity: 0.6;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">📈</div>
+            <h4>Engagement Assessment</h4>
+            <p>Current vs desired engagement levels</p>
+          </div>
+          
+          <div class="mini-card" style="opacity: 0.6;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">📝</div>
+            <h4>Requirements Templates</h4>
+            <p>User stories, acceptance criteria, NFRs</p>
+          </div>
+          
+          <div class="mini-card" style="opacity: 0.6;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">🔄</div>
+            <h4>Process Mapping</h4>
+            <p>AS-IS/TO-BE documentation patterns</p>
+          </div>
+          
         </div>
       </div>
     </div>
@@ -4663,7 +4689,1943 @@ function wireProcessPage() {
   });
 }
 
+/* ============================================
+   BUSINESS MODEL CANVAS PDF GENERATION
+   ============================================ */
+function generateBusinessModelCanvasPDF() {
+  const project = getActiveProject();
+  if (!project || !project.businessModelCanvas) {
+    toast("No business model canvas data to export");
+    return;
+  }
+  
+  toast("Business Model Canvas PDF generation coming soon! For now, you can take a screenshot of the canvas.");
+}
+
+/* ============================================
+   BUSINESS CASE PDF GENERATION
+   ============================================ */
+async function generateBusinessCasePDF() {
+  const project = getActiveProject();
+  if (!project || !project.businessCase) {
+    toast("No business case data to export");
+    return;
+  }
+  
+  const bc = project.businessCase;
+  
+  try {
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    
+    function cleanText(text) {
+      if (!text) return '';
+      return text
+        .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2013\u2014]/g, '-')
+        .replace(/\u2026/g, '...')
+        .replace(/[^\x20-\x7E\xA0-\xFF]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+    
+    const pdfDoc = await PDFDocument.create();
+    const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+    
+    let currentPage = pdfDoc.addPage([595, 842]); // A4
+    const { width: pageWidth, height: pageHeight } = currentPage.getSize();
+    const margin = 50;
+    const contentWidth = pageWidth - (margin * 2);
+    let yPos = pageHeight - margin;
+    
+    const textColor = rgb(0.1, 0.1, 0.1);
+    const mutedColor = rgb(0.4, 0.4, 0.4);
+    const accentColor = rgb(0.2, 0.4, 0.7);
+    
+    function checkPageBreak(spaceNeeded = 100) {
+      if (yPos < spaceNeeded + margin) {
+        currentPage = pdfDoc.addPage([595, 842]);
+        yPos = pageHeight - margin;
+      }
+    }
+    
+    function drawWrappedText(text, fontSize, font, color, maxWidth) {
+      const words = text.split(' ');
+      let line = '';
+      words.forEach(word => {
+        const testLine = line + (line ? ' ' : '') + word;
+        if (font.widthOfTextAtSize(testLine, fontSize) > maxWidth) {
+          if (line) {
+            checkPageBreak(20);
+            currentPage.drawText(line, {
+              x: margin + 10,
+              y: yPos,
+              size: fontSize,
+              font: font,
+              color: color
+            });
+            yPos -= fontSize * 1.5;
+          }
+          line = word;
+        } else {
+          line = testLine;
+        }
+      });
+      if (line) {
+        checkPageBreak(20);
+        currentPage.drawText(line, {
+          x: margin + 10,
+          y: yPos,
+          size: fontSize,
+          font: font,
+          color: color
+        });
+        yPos -= fontSize * 1.5;
+      }
+    }
+    
+    // Header - "Project Business Case"
+    currentPage.drawText('Project Business Case', {
+      x: margin,
+      y: yPos,
+      size: 24,
+      font: italicFont,
+      color: mutedColor
+    });
+    
+    // Decorative line under header
+    currentPage.drawRectangle({
+      x: margin,
+      y: yPos - 35,
+      width: 200,
+      height: 3,
+      color: accentColor
+    });
+    
+    yPos -= 60;
+    
+    // Metadata section
+    const metaY = yPos;
+    
+    currentPage.drawText('Date:', {
+      x: margin,
+      y: metaY,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    const dateObj = new Date(bc.date || Date.now());
+    const dateStr = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    currentPage.drawText(cleanText(dateStr), {
+      x: margin + 40,
+      y: metaY,
+      size: 10,
+      font: italicFont,
+      color: textColor
+    });
+    
+    currentPage.drawText('Subject:', {
+      x: margin,
+      y: metaY - 15,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    currentPage.drawText(cleanText(project.name || 'Untitled Project'), {
+      x: margin + 50,
+      y: metaY - 15,
+      size: 10,
+      font: boldFont,
+      color: textColor
+    });
+    
+    currentPage.drawText('To:', {
+      x: pageWidth - margin - 200,
+      y: metaY,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    currentPage.drawText(cleanText(bc.to || 'Executive Team'), {
+      x: pageWidth - margin - 180,
+      y: metaY,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    currentPage.drawText('From:', {
+      x: pageWidth - margin - 200,
+      y: metaY - 15,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    currentPage.drawText(cleanText(bc.from || 'Project Team'), {
+      x: pageWidth - margin - 180,
+      y: metaY - 15,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    yPos -= 50;
+    
+    // Horizontal line
+    currentPage.drawRectangle({
+      x: margin,
+      y: yPos,
+      width: contentWidth,
+      height: 1,
+      color: rgb(0.7, 0.7, 0.7)
+    });
+    
+    yPos -= 30;
+    
+    // 1. Summary
+    checkPageBreak(120);
+    currentPage.drawText('1. Summary', {
+      x: margin,
+      y: yPos,
+      size: 14,
+      font: boldFont,
+      color: textColor
+    });
+    yPos -= 20;
+    
+    if (bc.summary) {
+      drawWrappedText(cleanText(bc.summary), 10, regularFont, textColor, contentWidth - 20);
+    }
+    
+    yPos -= 10;
+    
+    // 2. Current Issue
+    checkPageBreak(120);
+    currentPage.drawText('2. Current Issue', {
+      x: margin,
+      y: yPos,
+      size: 14,
+      font: boldFont,
+      color: textColor
+    });
+    yPos -= 20;
+    
+    if (bc.currentIssue) {
+      drawWrappedText(cleanText(bc.currentIssue), 10, regularFont, textColor, contentWidth - 20);
+    }
+    
+    yPos -= 10;
+    
+    // 3. Solution Approach
+    checkPageBreak(250);
+    currentPage.drawText('3. Solution Approach', {
+      x: margin,
+      y: yPos,
+      size: 14,
+      font: boldFont,
+      color: textColor
+    });
+    yPos -= 20;
+    
+    if (bc.solutionSummary) {
+      drawWrappedText(cleanText(bc.solutionSummary), 10, regularFont, textColor, contentWidth - 20);
+    }
+    
+    yPos -= 15;
+    
+    // Table
+    const tableHeaders = ['#', 'Solution Option', 'R/D/O'];
+    const colWidths = [30, 400, 60];
+    
+    checkPageBreak(50);
+    
+    // Header row
+    currentPage.drawRectangle({
+      x: margin,
+      y: yPos - 20,
+      width: contentWidth,
+      height: 25,
+      color: rgb(0.95, 0.95, 0.95)
+    });
+    
+    let tableX = margin + 5;
+    tableHeaders.forEach((header, idx) => {
+      currentPage.drawText(header, {
+        x: tableX,
+        y: yPos - 12,
+        size: 8,
+        font: boldFont,
+        color: textColor
+      });
+      tableX += colWidths[idx];
+    });
+    
+    yPos -= 30;
+    
+    // Solution rows
+    bc.solutions.forEach((sol, idx) => {
+      checkPageBreak(30);
+      
+      if (idx % 2 === 0) {
+        currentPage.drawRectangle({
+          x: margin,
+          y: yPos - 15,
+          width: contentWidth,
+          height: 22,
+          color: rgb(0.99, 0.99, 0.99)
+        });
+      }
+      
+      tableX = margin + 5;
+      
+      currentPage.drawText(sol.id.toString(), {
+        x: tableX,
+        y: yPos,
+        size: 9,
+        font: regularFont,
+        color: textColor
+      });
+      tableX += colWidths[0];
+      
+      currentPage.drawText(cleanText(sol.option).substring(0, 60), {
+        x: tableX,
+        y: yPos,
+        size: 9,
+        font: regularFont,
+        color: textColor
+      });
+      tableX += colWidths[1];
+      
+      currentPage.drawText(sol.priority || 'D', {
+        x: tableX,
+        y: yPos,
+        size: 9,
+        font: boldFont,
+        color: textColor
+      });
+      
+      yPos -= 25;
+    });
+    
+    yPos -= 20;
+    
+    // 4. Recommendations
+    checkPageBreak(100);
+    currentPage.drawText('4. Recommendations', {
+      x: margin,
+      y: yPos,
+      size: 14,
+      font: boldFont,
+      color: textColor
+    });
+    yPos -= 20;
+    
+    bc.recommendations.forEach(rec => {
+      checkPageBreak(20);
+      drawWrappedText(cleanText(`- ${rec}`), 10, regularFont, textColor, contentWidth - 20);
+      yPos -= 6;
+    });
+    
+    // Save PDF
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Business-Case-${cleanText(project.name) || 'Project'}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast("Business Case PDF generated successfully!");
+  } catch (error) {
+    console.error('Business Case PDF error:', error);
+    toast("Error generating Business Case: " + error.message);
+  }
+}
+
+/* ============================================
+   PROJECT DOCUMENTATION PDF EXPORT
+   ============================================ */
+async function exportAsPDF() {
+  const project = getActiveProject();
+  if (!project) {
+    toast("No active project to export");
+    return;
+  }
+  
+  try {
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    
+    function cleanText(text) {
+      if (!text) return '';
+      return text
+        .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2013\u2014]/g, '-')
+        .replace(/\u2026/g, '...')
+        .replace(/[^\x20-\x7E\xA0-\xFF]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+    
+    const pdfDoc = await PDFDocument.create();
+    const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const italicFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+    
+    let currentPage = pdfDoc.addPage([595, 842]); // A4
+    const { width: pageWidth, height: pageHeight } = currentPage.getSize();
+    const margin = 50;
+    const contentWidth = pageWidth - (margin * 2);
+    let yPos = pageHeight - margin;
+    
+    const textColor = rgb(0.1, 0.1, 0.1);
+    const mutedColor = rgb(0.4, 0.4, 0.4);
+    const accentColor = rgb(0.2, 0.4, 0.7);
+    
+    function checkPageBreak(spaceNeeded = 100) {
+      if (yPos < spaceNeeded + margin) {
+        currentPage = pdfDoc.addPage([595, 842]);
+        yPos = pageHeight - margin;
+      }
+    }
+    
+    // Header - "Project Business Case"
+    currentPage.drawText('Project Business Case', {
+      x: margin,
+      y: yPos,
+      size: 24,
+      font: italicFont,
+      color: mutedColor
+    });
+    
+    // Decorative line under header
+    currentPage.drawRectangle({
+      x: margin,
+      y: yPos - 35,
+      width: 200,
+      height: 3,
+      color: accentColor
+    });
+    
+    yPos -= 60;
+    
+    // Metadata section
+    const metaY = yPos;
+    
+    currentPage.drawText('Date:', {
+      x: margin,
+      y: metaY,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    currentPage.drawText(cleanText(dateStr), {
+      x: margin + 40,
+      y: metaY,
+      size: 10,
+      font: italicFont,
+      color: textColor
+    });
+    
+    currentPage.drawText('Subject:', {
+      x: margin,
+      y: metaY - 15,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    currentPage.drawText(cleanText(project.name || 'Untitled Project'), {
+      x: margin + 50,
+      y: metaY - 15,
+      size: 10,
+      font: boldFont,
+      color: textColor
+    });
+    
+    currentPage.drawText('To:', {
+      x: pageWidth - margin - 200,
+      y: metaY,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    // Get stakeholders for To/From
+    const executives = project.stakeholders?.filter(s => 
+      s.role?.toLowerCase().includes('owner') || 
+      s.role?.toLowerCase().includes('executive') ||
+      s.role?.toLowerCase().includes('sponsor')
+    ) || [];
+    
+    const teamMembers = project.stakeholders?.filter(s => 
+      s.role?.toLowerCase().includes('manager') ||
+      s.role?.toLowerCase().includes('analyst')
+    ) || [];
+    
+    const toName = executives[0]?.name || 'Executive Team';
+    currentPage.drawText(cleanText(toName), {
+      x: pageWidth - margin - 180,
+      y: metaY,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    currentPage.drawText('From:', {
+      x: pageWidth - margin - 200,
+      y: metaY - 15,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    const fromNames = teamMembers.slice(0, 2).map(s => s.name).join(', ') || 'Project Team';
+    currentPage.drawText(cleanText(fromNames.substring(0, 30)), {
+      x: pageWidth - margin - 180,
+      y: metaY - 15,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    
+    yPos -= 50;
+    
+    // Horizontal line
+    currentPage.drawRectangle({
+      x: margin,
+      y: yPos,
+      width: contentWidth,
+      height: 1,
+      color: rgb(0.7, 0.7, 0.7)
+    });
+    
+    yPos -= 30;
+    
+    // 1. Summary
+    checkPageBreak(120);
+    currentPage.drawText('1. Summary', {
+      x: margin,
+      y: yPos,
+      size: 14,
+      font: boldFont,
+      color: textColor
+    });
+    yPos -= 20;
+    
+    const summaryText = cleanText(project.requirements?.goal || project.description || 
+      'This business case presents the rationale and approach for the proposed initiative.');
+    
+    const summaryWords = summaryText.split(' ');
+    let summaryLine = '';
+    summaryWords.forEach(word => {
+      const testLine = summaryLine + (summaryLine ? ' ' : '') + word;
+      if (regularFont.widthOfTextAtSize(testLine, 10) > contentWidth - 20) {
+        currentPage.drawText(summaryLine, {
+          x: margin + 10,
+          y: yPos,
+          size: 10,
+          font: regularFont,
+          color: textColor
+        });
+        yPos -= 14;
+        summaryLine = word;
+      } else {
+        summaryLine = testLine;
+      }
+    });
+    if (summaryLine) {
+      currentPage.drawText(summaryLine, {
+        x: margin + 10,
+        y: yPos,
+        size: 10,
+        font: regularFont,
+        color: textColor
+      });
+      yPos -= 14;
+    }
+    
+    yPos -= 20;
+    
+    // 2. Current Issue
+    checkPageBreak(120);
+    currentPage.drawText('2. Current Issue', {
+      x: margin,
+      y: yPos,
+      size: 14,
+      font: boldFont,
+      color: textColor
+    });
+    yPos -= 20;
+    
+    const issueText = cleanText(project.requirements?.problem || 
+      'The current situation requires strategic intervention to address identified challenges and opportunities.');
+    
+    const issueWords = issueText.split(' ');
+    let issueLine = '';
+    issueWords.forEach(word => {
+      const testLine = issueLine + (issueLine ? ' ' : '') + word;
+      if (regularFont.widthOfTextAtSize(testLine, 10) > contentWidth - 20) {
+        currentPage.drawText(issueLine, {
+          x: margin + 10,
+          y: yPos,
+          size: 10,
+          font: regularFont,
+          color: textColor
+        });
+        yPos -= 14;
+        issueLine = word;
+      } else {
+        issueLine = testLine;
+      }
+    });
+    if (issueLine) {
+      currentPage.drawText(issueLine, {
+        x: margin + 10,
+        y: yPos,
+        size: 10,
+        font: regularFont,
+        color: textColor
+      });
+      yPos -= 14;
+    }
+    
+    yPos -= 20;
+    
+    // 3. Solution Approach
+    checkPageBreak(250);
+    currentPage.drawText('3. Solution Approach', {
+      x: margin,
+      y: yPos,
+      size: 14,
+      font: boldFont,
+      color: textColor
+    });
+    yPos -= 20;
+    
+    currentPage.drawText('Solution summary, including must-have solutions with their cost versus benefit.', {
+      x: margin + 10,
+      y: yPos,
+      size: 10,
+      font: regularFont,
+      color: textColor
+    });
+    yPos -= 25;
+    
+    // Table
+    const tableHeaders = ['#', 'Solution Option', 'High Level Benefit', 'High Level Cost', 'Required, Desired, Optional'];
+    const colWidths = [30, 180, 100, 100, 85];
+    
+    // Header row
+    currentPage.drawRectangle({
+      x: margin,
+      y: yPos - 20,
+      width: contentWidth,
+      height: 25,
+      color: rgb(0.95, 0.95, 0.95)
+    });
+    
+    let tableX = margin + 5;
+    tableHeaders.forEach((header, idx) => {
+      currentPage.drawText(header, {
+        x: tableX,
+        y: yPos - 12,
+        size: 8,
+        font: boldFont,
+        color: textColor
+      });
+      tableX += colWidths[idx];
+    });
+    
+    yPos -= 30;
+    
+    // Sample solution rows
+    const solutions = [
+      { num: '1', option: cleanText(project.name || 'Primary Solution'), benefit: '$1,900,000', cost: '$800,000', priority: 'R' },
+      { num: '2', option: 'Enhanced Features & Support', benefit: '$2,000,000', cost: '$1,000,000', priority: 'R' },
+      { num: '3', option: 'Ongoing Technical Support', benefit: 'N/A', cost: '$250,000', priority: 'D' }
+    ];
+    
+    solutions.forEach((sol, idx) => {
+      checkPageBreak(30);
+      
+      if (idx % 2 === 0) {
+        currentPage.drawRectangle({
+          x: margin,
+          y: yPos - 15,
+          width: contentWidth,
+          height: 22,
+          color: rgb(0.99, 0.99, 0.99)
+        });
+      }
+      
+      tableX = margin + 5;
+      
+      currentPage.drawText(sol.num, {
+        x: tableX,
+        y: yPos,
+        size: 9,
+        font: regularFont,
+        color: textColor
+      });
+      tableX += colWidths[0];
+      
+      currentPage.drawText(sol.option.substring(0, 30), {
+        x: tableX,
+        y: yPos,
+        size: 9,
+        font: regularFont,
+        color: textColor
+      });
+      tableX += colWidths[1];
+      
+      currentPage.drawText(sol.benefit, {
+        x: tableX,
+        y: yPos,
+        size: 9,
+        font: regularFont,
+        color: textColor
+      });
+      tableX += colWidths[2];
+      
+      currentPage.drawText(sol.cost, {
+        x: tableX,
+        y: yPos,
+        size: 9,
+        font: regularFont,
+        color: textColor
+      });
+      tableX += colWidths[3];
+      
+      currentPage.drawText(sol.priority, {
+        x: tableX,
+        y: yPos,
+        size: 9,
+        font: boldFont,
+        color: textColor
+      });
+      
+      yPos -= 25;
+    });
+    
+    yPos -= 20;
+    
+    // 4. Recommendations
+    checkPageBreak(100);
+    currentPage.drawText('4. Recommendations', {
+      x: margin,
+      y: yPos,
+      size: 14,
+      font: boldFont,
+      color: textColor
+    });
+    yPos -= 20;
+    
+    const recommendations = [
+      'Approve Solution Options "1" and "2".',
+      'Approve resources to proceed with solution, including a Senior User / Subject Matter Expert.',
+      'Consider ongoing technical support or bring it in-house.'
+    ];
+    
+    recommendations.forEach(rec => {
+      checkPageBreak(20);
+      currentPage.drawText(cleanText(`- ${rec}`), {
+        x: margin + 10,
+        y: yPos,
+        size: 10,
+        font: regularFont,
+        color: textColor
+      });
+      yPos -= 16;
+    });
+    
+    // Save PDF
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Business-Case-${cleanText(project.name) || 'Project'}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast("Business Case PDF generated successfully!");
+  } catch (error) {
+    console.error('Business Case PDF error:', error);
+    toast("Error generating Business Case: " + error.message);
+  }
+}
+
+/* ============================================
+   PROJECT DOCUMENTATION PDF EXPORT
+   ============================================ */
+async function exportAsPDF() {
+  const project = getActiveProject();
+  if (!project) {
+    toast("No active project to export");
+    return;
+  }
+  
+  try {
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    
+    // Helper to strip emojis and special characters that can't be encoded
+    function cleanText(text) {
+      if (!text) return '';
+      // WinAnsi encoding supports characters 32-126 and 160-255
+      // Replace/remove everything else
+      return text
+        // Remove emojis
+        .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+        // Replace smart quotes with regular quotes
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        // Replace em/en dashes with hyphens
+        .replace(/[\u2013\u2014]/g, '-')
+        // Replace ellipsis
+        .replace(/\u2026/g, '...')
+        // Remove other unicode characters outside WinAnsi range
+        .replace(/[^\x20-\x7E\xA0-\xFF]/g, '')
+        // Normalize whitespace
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+    
+    // Create new PDF
+    const pdfDoc = await PDFDocument.create();
+    
+    // Embed fonts
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    
+    // Colors
+    const primaryColor = rgb(0.39, 0.42, 0.95); // Indigo
+    const textColor = rgb(0.1, 0.1, 0.1);
+    const mutedColor = rgb(0.4, 0.4, 0.4);
+    const lightGray = rgb(0.95, 0.95, 0.95);
+    
+    let currentPage = pdfDoc.addPage([595, 842]); // A4
+    let yPos = 792; // Start near top
+    const margin = 50;
+    const pageWidth = 595;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // Helper function to add new page if needed
+    function checkPageBreak(spaceNeeded = 100) {
+      if (yPos < spaceNeeded + margin) {
+        currentPage = pdfDoc.addPage([595, 842]);
+        yPos = 792;
+        return true;
+      }
+      return false;
+    }
+    
+    // Helper function to draw text with word wrap
+    function drawWrappedText(text, fontSize, font, color, maxWidth) {
+      const cleanedText = cleanText(text);
+      const words = cleanedText.split(' ');
+      const lines = [];
+      let currentLine = '';
+      
+      words.forEach(word => {
+        const testLine = currentLine + (currentLine ? ' ' : '') + word;
+        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+        
+        if (testWidth > maxWidth) {
+          if (currentLine) lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      });
+      if (currentLine) lines.push(currentLine);
+      
+      lines.forEach(line => {
+        checkPageBreak();
+        currentPage.drawText(line, {
+          x: margin,
+          y: yPos,
+          size: fontSize,
+          font: font,
+          color: color
+        });
+        yPos -= fontSize * 1.5;
+      });
+    }
+    
+    // Title Page
+    currentPage.drawRectangle({
+      x: 0,
+      y: yPos - 100,
+      width: pageWidth,
+      height: 150,
+      color: primaryColor
+    });
+    
+    currentPage.drawText('BUSINESS ANALYST', {
+      x: margin,
+      y: yPos - 40,
+      size: 32,
+      font: boldFont,
+      color: rgb(1, 1, 1)
+    });
+    
+    currentPage.drawText('PROJECT DOCUMENTATION', {
+      x: margin,
+      y: yPos - 75,
+      size: 24,
+      font: regularFont,
+      color: rgb(1, 1, 1)
+    });
+    
+    yPos -= 180;
+    
+    // Project Name
+    if (project.name) {
+      currentPage.drawText(cleanText(project.name), {
+        x: margin,
+        y: yPos,
+        size: 28,
+        font: boldFont,
+        color: textColor
+      });
+      yPos -= 40;
+    }
+    
+    // Project Description
+    if (project.description) {
+      currentPage.drawText(cleanText(project.description), {
+        x: margin,
+        y: yPos,
+        size: 12,
+        font: regularFont,
+        color: mutedColor
+      });
+      yPos -= 30;
+    }
+    
+    // Date
+    currentPage.drawText(`Generated: ${new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })}`, {
+      x: margin,
+      y: yPos,
+      size: 10,
+      font: regularFont,
+      color: mutedColor
+    });
+    
+    yPos -= 60;
+    
+    // Section function
+    function addSection(title, content, isList = false) {
+      checkPageBreak(80);
+      
+      // Section header with underline
+      currentPage.drawText(title, {
+        x: margin,
+        y: yPos,
+        size: 16,
+        font: boldFont,
+        color: primaryColor
+      });
+      yPos -= 25;
+      
+      currentPage.drawRectangle({
+        x: margin,
+        y: yPos,
+        width: contentWidth,
+        height: 1,
+        color: primaryColor
+      });
+      yPos -= 20;
+      
+      if (content) {
+        if (isList) {
+          const items = content.split('\n').filter(Boolean);
+          items.forEach(item => {
+            checkPageBreak();
+            currentPage.drawText('•', {
+              x: margin,
+              y: yPos,
+              size: 10,
+              font: regularFont,
+              color: textColor
+            });
+            drawWrappedText(item.trim(), 10, regularFont, textColor, contentWidth - 20);
+          });
+        } else {
+          drawWrappedText(content, 10, regularFont, textColor, contentWidth);
+        }
+      }
+      
+      yPos -= 20;
+    }
+    
+    // STAKEHOLDERS - Professional Register Table
+    if (project.stakeholders && project.stakeholders.length > 0) {
+      checkPageBreak(150);
+      
+      // Table header banner
+      currentPage.drawRectangle({
+        x: margin,
+        y: yPos - 60,
+        width: contentWidth,
+        height: 70,
+        color: rgb(0.35, 0.42, 0.49) // Slate gray
+      });
+      
+      currentPage.drawText('Stakeholder', {
+        x: margin + 10,
+        y: yPos - 20,
+        size: 20,
+        font: boldFont,
+        color: rgb(1, 1, 1)
+      });
+      
+      // REGISTER badge
+      currentPage.drawRectangle({
+        x: margin + 140,
+        y: yPos - 28,
+        width: 80,
+        height: 22,
+        color: rgb(0.83, 0.69, 0.22) // Gold
+      });
+      
+      currentPage.drawText('REGISTER', {
+        x: margin + 148,
+        y: yPos - 22,
+        size: 11,
+        font: boldFont,
+        color: rgb(0.12, 0.16, 0.22)
+      });
+      
+      currentPage.drawText(cleanText(`Project Name: ${project.name || 'Untitled'}`), {
+        x: margin + 10,
+        y: yPos - 40,
+        size: 9,
+        font: boldFont,
+        color: rgb(1, 1, 1)
+      });
+      
+      currentPage.drawText('This document provides contact information for the key stakeholders for this initiative', {
+        x: margin + 10,
+        y: yPos - 53,
+        size: 7,
+        font: regularFont,
+        color: rgb(0.95, 0.95, 0.95)
+      });
+      
+      yPos -= 75;
+      
+      // Column headers
+      currentPage.drawRectangle({
+        x: margin,
+        y: yPos - 20,
+        width: contentWidth,
+        height: 25,
+        color: rgb(0.9, 0.91, 0.93)
+      });
+      
+      currentPage.drawText('NAME', {
+        x: margin + 5,
+        y: yPos - 12,
+        size: 8,
+        font: boldFont,
+        color: rgb(0.22, 0.25, 0.32)
+      });
+      
+      currentPage.drawText('ROLE', {
+        x: margin + 85,
+        y: yPos - 12,
+        size: 8,
+        font: boldFont,
+        color: rgb(0.22, 0.25, 0.32)
+      });
+      
+      currentPage.drawText('RESPONSIBILITY', {
+        x: margin + 170,
+        y: yPos - 12,
+        size: 8,
+        font: boldFont,
+        color: rgb(0.22, 0.25, 0.32)
+      });
+      
+      currentPage.drawText('INFLUENCE', {
+        x: margin + 380,
+        y: yPos - 12,
+        size: 8,
+        font: boldFont,
+        color: rgb(0.22, 0.25, 0.32)
+      });
+      
+      currentPage.drawText('IMPACT', {
+        x: margin + 455,
+        y: yPos - 12,
+        size: 8,
+        font: boldFont,
+        color: rgb(0.22, 0.25, 0.32)
+      });
+      
+      yPos -= 30;
+      
+      // Table rows
+      project.stakeholders.forEach((s, index) => {
+        const cat = STAKEHOLDER_CATEGORIES.find(c => c.id === s.category);
+        const responsibility = cleanText(s.notes || (cat ? `${cat.label} responsibilities and oversight` : 'Project stakeholder'));
+        const influenceScore = Math.round(s.influence / 10);
+        const impactScore = Math.round(s.impact / 10);
+        
+        // Check if we need more space for this row
+        const estimatedHeight = Math.ceil(responsibility.length / 50) * 12 + 20;
+        checkPageBreak(estimatedHeight);
+        
+        // Alternating row background
+        if (index % 2 === 0) {
+          currentPage.drawRectangle({
+            x: margin,
+            y: yPos - estimatedHeight + 5,
+            width: contentWidth,
+            height: estimatedHeight,
+            color: rgb(0.98, 0.98, 0.98)
+          });
+        }
+        
+        // Name (bold)
+        currentPage.drawText(cleanText(s.name || 'Unnamed'), {
+          x: margin + 5,
+          y: yPos,
+          size: 9,
+          font: boldFont,
+          color: rgb(0.12, 0.16, 0.22)
+        });
+        
+        // Role (smaller, wrapped if needed)
+        const roleName = cleanText(s.role || '');
+        const roleWords = roleName.split(' ');
+        let roleLines = [];
+        let currentRoleLine = '';
+        const maxRoleWidth = 75;
+        
+        roleWords.forEach(word => {
+          const testLine = currentRoleLine + (currentRoleLine ? ' ' : '') + word;
+          const testWidth = regularFont.widthOfTextAtSize(testLine, 7);
+          if (testWidth > maxRoleWidth) {
+            if (currentRoleLine) roleLines.push(currentRoleLine);
+            currentRoleLine = word;
+          } else {
+            currentRoleLine = testLine;
+          }
+        });
+        if (currentRoleLine) roleLines.push(currentRoleLine);
+        
+        let roleY = yPos;
+        roleLines.slice(0, 2).forEach(line => { // Max 2 lines for role
+          currentPage.drawText(line, {
+            x: margin + 85,
+            y: roleY,
+            size: 7,
+            font: regularFont,
+            color: rgb(0.42, 0.45, 0.53)
+          });
+          roleY -= 9;
+        });
+        
+        // Responsibility (wrapped)
+        const respWords = responsibility.split(' ');
+        let respLines = [];
+        let currentLine = '';
+        const maxRespWidth = 190;
+        
+        respWords.forEach(word => {
+          const testLine = currentLine + (currentLine ? ' ' : '') + word;
+          const testWidth = regularFont.widthOfTextAtSize(testLine, 8);
+          if (testWidth > maxRespWidth) {
+            if (currentLine) respLines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        });
+        if (currentLine) respLines.push(currentLine);
+        
+        let respY = yPos;
+        respLines.forEach(line => {
+          currentPage.drawText(line, {
+            x: margin + 170,
+            y: respY,
+            size: 8,
+            font: regularFont,
+            color: rgb(0.22, 0.25, 0.32)
+          });
+          respY -= 10;
+        });
+        
+        // Influence score (centered)
+        currentPage.drawText(influenceScore.toString(), {
+          x: margin + 405,
+          y: yPos,
+          size: 9,
+          font: boldFont,
+          color: rgb(0.12, 0.16, 0.22)
+        });
+        
+        // Impact score (centered)
+        currentPage.drawText(impactScore.toString(), {
+          x: margin + 475,
+          y: yPos,
+          size: 9,
+          font: boldFont,
+          color: rgb(0.12, 0.16, 0.22)
+        });
+        
+        yPos -= estimatedHeight;
+      });
+      
+      // Table footer note
+      checkPageBreak(30);
+      currentPage.drawRectangle({
+        x: margin,
+        y: yPos - 25,
+        width: contentWidth,
+        height: 25,
+        color: rgb(0.98, 0.98, 0.99)
+      });
+      
+      currentPage.drawText('Note: Stakeholder Influence and Project Impact are rated on a scale of 1-10, where 1 is low and 10 is high.', {
+        x: margin + 5,
+        y: yPos - 15,
+        size: 7,
+        font: regularFont,
+        color: rgb(0.42, 0.45, 0.53)
+      });
+      
+      yPos -= 50;
+      
+      // STAKEHOLDER INFLUENCE/IMPACT MATRIX
+      checkPageBreak(380);
+      
+      currentPage.drawText('STAKEHOLDER INFLUENCE/IMPACT MATRIX', {
+        x: margin,
+        y: yPos,
+        size: 14,
+        font: boldFont,
+        color: primaryColor
+      });
+      yPos -= 30;
+      
+      // Matrix dimensions
+      const matrixSize = 320;
+      const matrixX = margin + 60;
+      const matrixY = yPos - matrixSize;
+      
+      // Draw quadrants with colors (lighter than before)
+      currentPage.drawRectangle({
+        x: matrixX,
+        y: matrixY + matrixSize/2,
+        width: matrixSize/2,
+        height: matrixSize/2,
+        color: rgb(0.88, 0.92, 0.99) // Very light blue
+      });
+      
+      currentPage.drawRectangle({
+        x: matrixX + matrixSize/2,
+        y: matrixY + matrixSize/2,
+        width: matrixSize/2,
+        height: matrixSize/2,
+        color: rgb(0.92, 0.98, 0.8) // Very light green
+      });
+      
+      currentPage.drawRectangle({
+        x: matrixX,
+        y: matrixY,
+        width: matrixSize/2,
+        height: matrixSize/2,
+        color: rgb(0.99, 0.98, 0.85) // Very light yellow
+      });
+      
+      currentPage.drawRectangle({
+        x: matrixX + matrixSize/2,
+        y: matrixY,
+        width: matrixSize/2,
+        height: matrixSize/2,
+        color: rgb(0.99, 0.92, 0.92) // Very light pink
+      });
+      
+      // Draw grid lines (light gray)
+      for (let i = 1; i < 10; i++) {
+        // Vertical grid lines
+        currentPage.drawRectangle({
+          x: matrixX + (i * matrixSize / 10),
+          y: matrixY,
+          width: 0.5,
+          height: matrixSize,
+          color: rgb(0.85, 0.85, 0.85)
+        });
+        
+        // Horizontal grid lines
+        currentPage.drawRectangle({
+          x: matrixX,
+          y: matrixY + (i * matrixSize / 10),
+          width: matrixSize,
+          height: 0.5,
+          color: rgb(0.85, 0.85, 0.85)
+        });
+      }
+      
+      // Draw main crosshairs (yellow/gold)
+      // Vertical center line
+      currentPage.drawRectangle({
+        x: matrixX + matrixSize/2 - 1,
+        y: matrixY,
+        width: 2,
+        height: matrixSize,
+        color: rgb(0.8, 0.65, 0.1)
+      });
+      
+      // Horizontal center line
+      currentPage.drawRectangle({
+        x: matrixX,
+        y: matrixY + matrixSize/2 - 1,
+        width: matrixSize,
+        height: 2,
+        color: rgb(0.8, 0.65, 0.1)
+      });
+      
+      // Axes (dark borders)
+      // Y-axis
+      currentPage.drawRectangle({
+        x: matrixX - 2,
+        y: matrixY,
+        width: 2,
+        height: matrixSize,
+        color: rgb(0.2, 0.2, 0.2)
+      });
+      
+      // X-axis
+      currentPage.drawRectangle({
+        x: matrixX,
+        y: matrixY - 2,
+        width: matrixSize,
+        height: 2,
+        color: rgb(0.2, 0.2, 0.2)
+      });
+      
+      // Corner strategy labels (smaller, lighter)
+      currentPage.drawText('Maintain', {
+        x: matrixX + 8,
+        y: matrixY + matrixSize - 12,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.5, 0.5, 0.5)
+      });
+      
+      currentPage.drawText('Collaborate With', {
+        x: matrixX + matrixSize - 80,
+        y: matrixY + matrixSize - 12,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.5, 0.5, 0.5)
+      });
+      
+      currentPage.drawText('Monitor', {
+        x: matrixX + 8,
+        y: matrixY + 8,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.5, 0.5, 0.5)
+      });
+      
+      currentPage.drawText('Keep Informed', {
+        x: matrixX + matrixSize - 68,
+        y: matrixY + 8,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.5, 0.5, 0.5)
+      });
+      
+      // Y-axis label (embed SVG for rotated text)
+      const influenceSvg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50" viewBox="0 0 200 50">
+  <text x="100" y="25"
+        font-family="Arial, Helvetica, sans-serif"
+        font-weight="700"
+        font-size="16"
+        fill="#4d4d4d"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        transform="rotate(-90 100 25)">
+    INFLUENCE
+  </text>
+</svg>`;
+      
+      try {
+        const influenceImg = await pdfDoc.embedSvg(influenceSvg);
+        const influenceDims = influenceImg.scale(0.4);
+        
+        currentPage.drawImage(influenceImg, {
+          x: matrixX - 60,
+          y: matrixY + matrixSize/2 - 40,
+          width: influenceDims.width,
+          height: influenceDims.height
+        });
+      } catch (error) {
+        // Fallback to stacked letters if SVG embedding fails
+        const yWords = 'INFLUENCE';
+        let yWordY = matrixY + matrixSize/2 + 30;
+        
+        for (let i = 0; i < yWords.length; i++) {
+          currentPage.drawText(yWords[i], {
+            x: matrixX - 45,
+            y: yWordY,
+            size: 8,
+            font: boldFont,
+            color: rgb(0.3, 0.3, 0.3)
+          });
+          yWordY -= 10;
+        }
+      }
+      
+      currentPage.drawText('High', {
+        x: matrixX - 35,
+        y: matrixY + matrixSize + 8,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.4, 0.4, 0.4)
+      });
+      
+      currentPage.drawText('Low', {
+        x: matrixX - 32,
+        y: matrixY - 15,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.4, 0.4, 0.4)
+      });
+      
+      // X-axis label (simple horizontal text)
+      currentPage.drawText('IMPACT', {
+        x: matrixX + matrixSize/2 - 18,
+        y: matrixY - 25,
+        size: 9,
+        font: boldFont,
+        color: rgb(0.3, 0.3, 0.3)
+      });
+      
+      currentPage.drawText('Low', {
+        x: matrixX + 5,
+        y: matrixY - 15,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.4, 0.4, 0.4)
+      });
+      
+      currentPage.drawText('High', {
+        x: matrixX + matrixSize - 20,
+        y: matrixY - 15,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.4, 0.4, 0.4)
+      });
+      
+      // Plot stakeholders with colored circles and initials
+      const colors = [
+        rgb(0.9, 0.3, 0.3),   // Red
+        rgb(0.4, 0.5, 0.9),   // Blue
+        rgb(0.3, 0.75, 0.75), // Cyan
+        rgb(0.4, 0.75, 0.4),  // Green
+        rgb(0.85, 0.4, 0.85), // Purple
+      ];
+      
+      project.stakeholders.forEach((s, idx) => {
+        const impactVal = typeof s.impact === 'number' && !isNaN(s.impact) ? s.impact : 50;
+        const influenceVal = typeof s.influence === 'number' && !isNaN(s.influence) ? s.influence : 50;
+        
+        const x = matrixX + (impactVal / 100) * matrixSize;
+        const y = matrixY + (influenceVal / 100) * matrixSize;
+        
+        const color = colors[idx % colors.length];
+        
+        // Draw colored circle
+        currentPage.drawCircle({
+          x: x,
+          y: y,
+          size: 12,
+          color: color
+        });
+        
+        // Get initials (first letter of first name + first letter of last name)
+        const getInitials = (name) => {
+          if (!name) return 'S';
+          const parts = name.trim().split(' ');
+          if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+          return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        };
+        
+        const initials = cleanText(getInitials(s.name));
+        
+        // Draw initials (white text)
+        currentPage.drawText(initials, {
+          x: x - (initials.length === 1 ? 3 : 5),
+          y: y - 3,
+          size: 8,
+          font: boldFont,
+          color: rgb(1, 1, 1)
+        });
+      });
+      
+      yPos -= matrixSize + 55;
+      
+      // Legend/Key
+      checkPageBreak(50);
+      
+      currentPage.drawText('KEY:', {
+        x: margin,
+        y: yPos,
+        size: 9,
+        font: boldFont,
+        color: rgb(0.2, 0.2, 0.2)
+      });
+      yPos -= 15;
+      
+      currentPage.drawText('Influence = The individual\'s level of influence on the project', {
+        x: margin + 5,
+        y: yPos,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.3, 0.3, 0.3)
+      });
+      yPos -= 12;
+      
+      currentPage.drawText('Impact = The level of impact the project has on the individual', {
+        x: margin + 5,
+        y: yPos,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.3, 0.3, 0.3)
+      });
+      
+      yPos -= 30;
+      
+      // STAKEHOLDER ENGAGEMENT ASSESSMENT
+      checkPageBreak(350);
+      
+      currentPage.drawText('STAKEHOLDER ENGAGEMENT ASSESSMENT', {
+        x: margin,
+        y: yPos,
+        size: 14,
+        font: boldFont,
+        color: primaryColor
+      });
+      yPos -= 18;
+      
+      currentPage.drawText('Current State (C) vs Desired State (D)', {
+        x: margin,
+        y: yPos,
+        size: 8,
+        font: regularFont,
+        color: mutedColor
+      });
+      yPos -= 30;
+      
+      // Engagement levels header
+      const engagementLevels = [
+        { label: 'Unaware', color: rgb(0.85, 0.45, 0.45) },
+        { label: 'Resistant', color: rgb(0.9, 0.65, 0.4) },
+        { label: 'Neutral', color: rgb(0.85, 0.8, 0.5) },
+        { label: 'Supportive', color: rgb(0.65, 0.8, 0.5) },
+        { label: 'Leading', color: rgb(0.4, 0.7, 0.4) }
+      ];
+      
+      const columnWidth = 85;
+      const nameColumnWidth = 100;
+      
+      // Draw header row
+      currentPage.drawRectangle({
+        x: margin,
+        y: yPos - 15,
+        width: nameColumnWidth + (columnWidth * 5),
+        height: 20,
+        color: rgb(0.92, 0.92, 0.92)
+      });
+      
+      currentPage.drawText('Stakeholder', {
+        x: margin + 5,
+        y: yPos - 8,
+        size: 8,
+        font: boldFont,
+        color: rgb(0.2, 0.2, 0.2)
+      });
+      
+      engagementLevels.forEach((level, idx) => {
+        const xPos = margin + nameColumnWidth + (idx * columnWidth);
+        currentPage.drawText(level.label, {
+          x: xPos + 12,
+          y: yPos - 8,
+          size: 7,
+          font: boldFont,
+          color: rgb(0.2, 0.2, 0.2)
+        });
+      });
+      
+      yPos -= 25;
+      
+      // Map categorical engagement to index (0-4)
+      const getEngagementIndex = (engagement) => {
+        if (typeof engagement === 'number') {
+          // Convert 0-100 to 0-4 scale
+          if (engagement >= 80) return 4; // Leading
+          if (engagement >= 60) return 3; // Supportive
+          if (engagement >= 40) return 2; // Neutral
+          if (engagement >= 20) return 1; // Resistant
+          return 0; // Unaware
+        }
+        const map = { unaware: 0, resistant: 1, neutral: 2, supportive: 3, leading: 4 };
+        return map[engagement] || 2;
+      };
+      
+      // Show stakeholders with current and desired engagement
+      project.stakeholders.slice(0, 8).forEach((s, idx) => {
+        checkPageBreak(28);
+        
+        const currentIdx = getEngagementIndex(s.engagement);
+        const desiredIdx = getEngagementIndex(s.desiredEngagement || s.engagement);
+        
+        // Alternating row background
+        if (idx % 2 === 0) {
+          currentPage.drawRectangle({
+            x: margin,
+            y: yPos - 18,
+            width: nameColumnWidth + (columnWidth * 5),
+            height: 25,
+            color: rgb(0.98, 0.98, 0.98)
+          });
+        }
+        
+        // Stakeholder name
+        currentPage.drawText(cleanText((s.name || 'Unnamed').substring(0, 15)), {
+          x: margin + 5,
+          y: yPos - 6,
+          size: 8,
+          font: regularFont,
+          color: rgb(0.15, 0.15, 0.15)
+        });
+        
+        // Draw engagement indicators
+        engagementLevels.forEach((level, levelIdx) => {
+          const xPos = margin + nameColumnWidth + (levelIdx * columnWidth) + 30;
+          
+          // Current state (C) - filled circle
+          if (levelIdx === currentIdx) {
+            currentPage.drawCircle({
+              x: xPos,
+              y: yPos - 3,
+              size: 5,
+              color: level.color
+            });
+            currentPage.drawText('C', {
+              x: xPos - 2.5,
+              y: yPos - 5,
+              size: 6,
+              font: boldFont,
+              color: rgb(1, 1, 1)
+            });
+          }
+          
+          // Desired state (D) - outlined circle or filled if different
+          if (levelIdx === desiredIdx) {
+            if (currentIdx !== desiredIdx) {
+              // Draw outline circle
+              currentPage.drawCircle({
+                x: xPos,
+                y: yPos - 14,
+                size: 5,
+                color: level.color
+              });
+              currentPage.drawCircle({
+                x: xPos,
+                y: yPos - 14,
+                size: 4,
+                color: rgb(1, 1, 1)
+              });
+              currentPage.drawText('D', {
+                x: xPos - 2.5,
+                y: yPos - 16,
+                size: 6,
+                font: boldFont,
+                color: level.color
+              });
+              
+              // Draw arrow from current to desired
+              const arrowStartX = margin + nameColumnWidth + (currentIdx * columnWidth) + 30;
+              const arrowEndX = xPos;
+              
+              // Horizontal line
+              currentPage.drawRectangle({
+                x: Math.min(arrowStartX, arrowEndX) + 7,
+                y: yPos - 9,
+                width: Math.abs(arrowEndX - arrowStartX) - 14,
+                height: 1,
+                color: rgb(0.5, 0.5, 0.5)
+              });
+            }
+          }
+        });
+        
+        yPos -= 28;
+      });
+      
+      // Legend
+      yPos -= 10;
+      checkPageBreak(40);
+      
+      currentPage.drawText('Engagement Levels:', {
+        x: margin,
+        y: yPos,
+        size: 8,
+        font: boldFont,
+        color: rgb(0.3, 0.3, 0.3)
+      });
+      yPos -= 15;
+      
+      currentPage.drawRectangle({
+        x: margin + 5,
+        y: yPos - 2,
+        width: 12,
+        height: 8,
+        color: rgb(0.4, 0.7, 0.4)
+      });
+      currentPage.drawText('Leading (70-100%)', {
+        x: margin + 22,
+        y: yPos,
+        size: 7,
+        font: regularFont,
+        color: rgb(0.4, 0.4, 0.4)
+      });
+      
+      currentPage.drawRectangle({
+        x: margin + 125,
+        y: yPos - 2,
+        width: 12,
+        height: 8,
+        color: rgb(0.9, 0.8, 0.4)
+      });
+      currentPage.drawText('Supportive (40-69%)', {
+        x: margin + 142,
+        y: yPos,
+        size: 7,
+        font: regularFont,
+        color: rgb(0.4, 0.4, 0.4)
+      });
+      
+      currentPage.drawRectangle({
+        x: margin + 265,
+        y: yPos - 2,
+        width: 12,
+        height: 8,
+        color: rgb(0.9, 0.5, 0.5)
+      });
+      currentPage.drawText('Resistant (0-39%)', {
+        x: margin + 282,
+        y: yPos,
+        size: 7,
+        font: regularFont,
+        color: rgb(0.4, 0.4, 0.4)
+      });
+      
+      yPos -= 40;
+    }
+    
+    // REQUIREMENTS
+    const r = project.requirements;
+    if (r.problem) addSection('PROBLEM STATEMENT', r.problem);
+    if (r.goal) addSection('GOAL & OUTCOME', r.goal);
+    if (r.inScope) addSection('IN SCOPE', r.inScope, true);
+    if (r.outScope) addSection('OUT OF SCOPE', r.outScope, true);
+    if (r.success) addSection('SUCCESS MEASURES', r.success, true);
+    
+    // MoSCoW
+    if (r.moscowPrioritization && r.moscowPrioritization.length > 0) {
+      const mustHave = r.moscowPrioritization.filter(i => i.benefit > 5 && i.cost <= 5);
+      const shouldHave = r.moscowPrioritization.filter(i => i.benefit > 5 && i.cost > 5);
+      const couldHave = r.moscowPrioritization.filter(i => i.benefit <= 5 && i.cost <= 5);
+      const wontHave = r.moscowPrioritization.filter(i => i.benefit <= 5 && i.cost > 5);
+      
+      addSection('MOSCOW PRIORITIZATION', '');
+      
+      if (mustHave.length > 0) {
+        currentPage.drawText('MUST HAVE (High Value, Low Effort):', {
+          x: margin + 10,
+          y: yPos,
+          size: 10,
+          font: boldFont,
+          color: textColor
+        });
+        yPos -= 15;
+        mustHave.forEach(item => {
+          checkPageBreak();
+          currentPage.drawText(cleanText(`• ${item.name}`), {
+            x: margin + 20,
+            y: yPos,
+            size: 9,
+            font: regularFont,
+            color: textColor
+          });
+          yPos -= 12;
+        });
+        yPos -= 5;
+      }
+      
+      if (shouldHave.length > 0) {
+        checkPageBreak();
+        currentPage.drawText('SHOULD HAVE (High Value, High Effort):', {
+          x: margin + 10,
+          y: yPos,
+          size: 10,
+          font: boldFont,
+          color: textColor
+        });
+        yPos -= 15;
+        shouldHave.forEach(item => {
+          checkPageBreak();
+          currentPage.drawText(cleanText(`• ${item.name}`), {
+            x: margin + 20,
+            y: yPos,
+            size: 9,
+            font: regularFont,
+            color: textColor
+          });
+          yPos -= 12;
+        });
+        yPos -= 5;
+      }
+      
+      yPos -= 15;
+    }
+    
+    if (r.constraints) addSection('CONSTRAINTS', r.constraints, true);
+    if (r.assumptions) addSection('ASSUMPTIONS', r.assumptions, true);
+    if (r.risks) addSection('RISKS & DEPENDENCIES', r.risks, true);
+    
+    // ACCEPTANCE CRITERIA
+    if (r.acceptanceCriteria && Array.isArray(r.acceptanceCriteria) && r.acceptanceCriteria.length > 0) {
+      addSection('ACCEPTANCE CRITERIA', '');
+      
+      r.acceptanceCriteria.forEach((criterion, index) => {
+        checkPageBreak(80);
+        
+        currentPage.drawText(cleanText(`${index + 1}. ${criterion.title || 'Untitled'}`), {
+          x: margin + 10,
+          y: yPos,
+          size: 10,
+          font: boldFont,
+          color: textColor
+        });
+        yPos -= 15;
+        
+        if (criterion.steps && criterion.steps.length > 0) {
+          criterion.steps.forEach((step, stepIndex) => {
+            if (step) {
+              checkPageBreak();
+              currentPage.drawText(cleanText(`   ${String.fromCharCode(97 + stepIndex)}. ${step}`), {
+                x: margin + 20,
+                y: yPos,
+                size: 9,
+                font: regularFont,
+                color: textColor
+              });
+              yPos -= 12;
+            }
+          });
+        }
+        yPos -= 10;
+      });
+    }
+    
+    // PROCESS
+    const p = project.process;
+    if (p.asIs || p.toBe) {
+      if (p.asIs) addSection('AS-IS PROCESS (Current State)', p.asIs);
+      if (p.toBe) addSection('TO-BE PROCESS (Future State)', p.toBe);
+      if (p.decisions) addSection('DECISION POINTS', p.decisions);
+      if (p.exceptions) addSection('EXCEPTIONS & EDGE CASES', p.exceptions);
+    }
+    
+    // RETROSPECTIVE
+    const retro = project.retrospective;
+    if (retro && (retro.wentWell || retro.couldImprove || retro.learned || retro.puzzles)) {
+      checkPageBreak(100);
+      
+      currentPage.drawText('PROJECT RETROSPECTIVE', {
+        x: margin,
+        y: yPos,
+        size: 18,
+        font: boldFont,
+        color: primaryColor
+      });
+      yPos -= 30;
+      
+      if (retro.wentWell) addSection('What Went Well', retro.wentWell, true);
+      if (retro.couldImprove) addSection('What Could Be Improved', retro.couldImprove, true);
+      if (retro.learned) addSection('What We Learned', retro.learned, true);
+      if (retro.puzzles) addSection('What Still Puzzles Us', retro.puzzles, true);
+      
+      if (retro.stakeholderFeedback && retro.stakeholderFeedback.length > 0) {
+        addSection('STAKEHOLDER FEEDBACK', '');
+        retro.stakeholderFeedback.forEach(fb => {
+          if (fb.stakeholder || fb.feedback) {
+            checkPageBreak(40);
+            currentPage.drawText(cleanText(fb.stakeholder || 'Anonymous'), {
+              x: margin + 10,
+              y: yPos,
+              size: 10,
+              font: boldFont,
+              color: textColor
+            });
+            yPos -= 15;
+            drawWrappedText(`"${fb.feedback || 'No feedback'}"`, 9, regularFont, mutedColor, contentWidth - 20);
+            yPos -= 10;
+          }
+        });
+      }
+    }
+    
+    // Save PDF
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${cleanText(project.name) || 'BA-Documentation'}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast("PDF exported successfully!");
+  } catch (error) {
+    console.error('PDF export error:', error);
+    toast("Error exporting PDF: " + error.message);
+  }
+}
+
 function wireOutputPage() {
+  // Export PDF button
+  document.getElementById("exportPDF")?.addEventListener("click", () => {
+    exportAsPDF();
+  });
+  
   document.getElementById("copyOutput")?.addEventListener("click", async () => {
     const output = generateOutput();
     try {
@@ -4873,6 +6835,189 @@ function wireRetrospectivePage() {
 /* ============================================
    RENDER
    ============================================ */
+/* ============================================
+   BUSINESS MODEL CANVAS VIEW
+   ============================================ */
+function viewBusinessModelCanvas() {
+  const project = getActiveProject();
+  if (!project) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <p>Please create or select a project first to build a business model canvas.</p>
+          <button class="btn btn-primary" onclick="state.route='projects'; render();">Go to Projects</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Initialize business model canvas data if not exists
+  if (!project.businessModelCanvas) {
+    project.businessModelCanvas = {
+      businessName: project.name || '',
+      preparedBy: '',
+      keyPartners: '',
+      keyActivities: '',
+      keyResources: '',
+      valuePropositions: '',
+      customerRelationships: '',
+      channels: '',
+      customerSegments: '',
+      costStructure: '',
+      revenueStreams: ''
+    };
+    saveProjects();
+  }
+  
+  const bmc = project.businessModelCanvas;
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">🎯 Business Model Canvas</h2>
+        <p class="card-subtitle">Project: ${project.name || 'Untitled'}</p>
+      </div>
+      
+      <div class="card-body" style="max-width: 1200px;">
+        
+        <!-- Header Info -->
+        <div class="section">
+          <div class="grid grid-2" style="gap: 16px;">
+            <div class="form-group">
+              <label>Business Name</label>
+              <input type="text" id="bmcBusinessName" value="${bmc.businessName}" class="input" placeholder="e.g., Pet Buddy">
+            </div>
+            <div class="form-group">
+              <label>Prepared By</label>
+              <input type="text" id="bmcPreparedBy" value="${bmc.preparedBy}" class="input" placeholder="e.g., Samantha Young & Ben">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Canvas Grid -->
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 24px;">
+          
+          <!-- Key Partners -->
+          <div class="form-group" style="grid-row: 1 / 3;">
+            <label style="background: #E8F5E9; padding: 8px; border-radius: 4px; display: block; font-weight: 600;">🤝 Key Partners</label>
+            <textarea id="bmcKeyPartners" class="textarea" rows="12" placeholder="Which key resources do we acquire from partners?
+
+Which key activities do our partners perform?
+
+Who are our most important partners?">${bmc.keyPartners}</textarea>
+          </div>
+          
+          <!-- Key Activities & Resources -->
+          <div style="grid-row: 1 / 3; display: flex; flex-direction: column; gap: 12px;">
+            <div class="form-group" style="flex: 1;">
+              <label style="background: #FFF9C4; padding: 8px; border-radius: 4px; display: block; font-weight: 600;">⚡ Key Activities</label>
+              <textarea id="bmcKeyActivities" class="textarea" rows="5" placeholder="What activities do we perform every day to create and deliver value?">${bmc.keyActivities}</textarea>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label style="background: #FFECB3; padding: 8px; border-radius: 4px; display: block; font-weight: 600;">🔑 Key Resources</label>
+              <textarea id="bmcKeyResources" class="textarea" rows="5" placeholder="What resources do we need to create & deliver our value proposition?">${bmc.keyResources}</textarea>
+            </div>
+          </div>
+          
+          <!-- Value Propositions -->
+          <div class="form-group" style="grid-row: 1 / 3;">
+            <label style="background: #FFCDD2; padding: 8px; border-radius: 4px; display: block; font-weight: 600;">💎 Value Propositions</label>
+            <textarea id="bmcValuePropositions" class="textarea" rows="12" placeholder="What value do we deliver?
+
+What customer problems are we solving?
+
+What customer need are we addressing?
+
+What is our promise to our customer?
+
+What products and services do we offer?">${bmc.valuePropositions}</textarea>
+          </div>
+          
+          <!-- Customer Relationships & Channels -->
+          <div style="grid-row: 1 / 3; display: flex; flex-direction: column; gap: 12px;">
+            <div class="form-group" style="flex: 1;">
+              <label style="background: #F8BBD0; padding: 8px; border-radius: 4px; display: block; font-weight: 600;">🤗 Customer Relationships</label>
+              <textarea id="bmcCustomerRelationships" class="textarea" rows="5" placeholder="What relationship does each customer segment expect us to maintain?">${bmc.customerRelationships}</textarea>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label style="background: #E1BEE7; padding: 8px; border-radius: 4px; display: block; font-weight: 600;">📣 Channels</label>
+              <textarea id="bmcChannels" class="textarea" rows="5" placeholder="How does our value proposition reach our customer?
+
+Where can our customer buy or use our products/services?">${bmc.channels}</textarea>
+            </div>
+          </div>
+          
+          <!-- Customer Segments -->
+          <div class="form-group" style="grid-row: 1 / 3;">
+            <label style="background: #D1C4E9; padding: 8px; border-radius: 4px; display: block; font-weight: 600;">👥 Customer Segments</label>
+            <textarea id="bmcCustomerSegments" class="textarea" rows="12" placeholder="For whom are we creating value?
+
+What are the customer segments or groups who pay for or receive our product/service?">${bmc.customerSegments}</textarea>
+          </div>
+          
+          <!-- Cost Structure (spans 2 columns) -->
+          <div class="form-group" style="grid-column: 1 / 3;">
+            <label style="background: #BBDEFB; padding: 8px; border-radius: 4px; display: block; font-weight: 600;">💰 Cost Structure</label>
+            <textarea id="bmcCostStructure" class="textarea" rows="4" placeholder="What are the costs of creating and delivering value to the customer?">${bmc.costStructure}</textarea>
+          </div>
+          
+          <!-- Revenue Streams (spans 3 columns) -->
+          <div class="form-group" style="grid-column: 3 / 6;">
+            <label style="background: #C8E6C9; padding: 8px; border-radius: 4px; display: block; font-weight: 600;">💵 Revenue Streams</label>
+            <textarea id="bmcRevenueStreams" class="textarea" rows="4" placeholder="How do customers pay or reward us for the value we bring them?
+
+What are the different revenue models?">${bmc.revenueStreams}</textarea>
+          </div>
+          
+        </div>
+        
+        <!-- Actions -->
+        <div style="display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+          <button class="btn btn-primary" id="generateBMCPDF">📄 Generate PDF</button>
+          <button class="btn" id="saveBMC">💾 Save Changes</button>
+          <button class="btn" onclick="state.route='library'; render();">← Back to Library</button>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+function wireBusinessModelCanvasPage() {
+  const project = getActiveProject();
+  if (!project || !project.businessModelCanvas) return;
+  
+  const bmc = project.businessModelCanvas;
+  
+  // Save all field changes
+  const fields = [
+    'bmcBusinessName', 'bmcPreparedBy', 'bmcKeyPartners', 'bmcKeyActivities',
+    'bmcKeyResources', 'bmcValuePropositions', 'bmcCustomerRelationships',
+    'bmcChannels', 'bmcCustomerSegments', 'bmcCostStructure', 'bmcRevenueStreams'
+  ];
+  
+  fields.forEach(id => {
+    document.getElementById(id)?.addEventListener('change', (e) => {
+      const field = id.replace('bmc', '').charAt(0).toLowerCase() + id.replace('bmc', '').slice(1);
+      bmc[field] = e.target.value;
+      saveProjects();
+    });
+  });
+  
+  // Save button
+  document.getElementById('saveBMC')?.addEventListener('click', () => {
+    toast('Business Model Canvas saved!');
+  });
+  
+  // Generate PDF
+  document.getElementById('generateBMCPDF')?.addEventListener('click', () => {
+    generateBusinessModelCanvasPDF();
+  });
+}
+
+/* ============================================
+   RENDER
+   ============================================ */
 function render() {
   const app = document.getElementById("app");
   
@@ -4908,6 +7053,8 @@ function render() {
     case "output": html = viewOutput(); break;
     case "retrospective": html = viewRetrospective(); break;
     case "library": html = viewLibrary(); break;
+    case "businessCase": html = viewBusinessCase(); break;
+    case "businessModelCanvas": html = viewBusinessModelCanvas(); break;
     default: html = viewProjects();
   }
   
@@ -4923,7 +7070,451 @@ function render() {
     case "process": wireProcessPage(); break;
     case "output": wireOutputPage(); break;
     case "retrospective": wireRetrospectivePage(); break;
+    case "library": wireLibraryPage(); break;
+    case "businessCase": wireBusinessCasePage(); break;
+    case "businessModelCanvas": wireBusinessModelCanvasPage(); break;
   }
+}
+
+function wireLibraryPage() {
+  document.getElementById('businessCaseCard')?.addEventListener('click', () => {
+    state.route = 'businessCase';
+    render();
+  });
+  
+  document.getElementById('businessModelCanvasCard')?.addEventListener('click', () => {
+    state.route = 'businessModelCanvas';
+    render();
+  });
+}
+
+function viewBusinessCase() {
+  const project = getActiveProject();
+  if (!project) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <p>Please create or select a project first to build a business case.</p>
+          <button class="btn btn-primary" onclick="state.route='projects'; render();">Go to Projects</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Initialize business case data if not exists
+  if (!project.businessCase) {
+    const today = new Date();
+    project.businessCase = {
+      date: today.toISOString().split('T')[0],
+      to: '',
+      from: '',
+      summary: project.requirements?.goal || '',
+      currentIssue: project.requirements?.problem || '',
+      solutionSummary: 'Solution summary and proposed approach.',
+      solutions: [
+        { id: 1, option: project.name || 'Primary Solution', priority: 'R' }
+      ],
+      recommendations: [
+        'Approve Solution Options "1" and "2".',
+        'Approve resources to proceed with solution.',
+        'Consider ongoing technical support or bring it in-house.'
+      ]
+    };
+    saveProjects();
+  }
+  
+  const bc = project.businessCase;
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">📊 Business Case</h2>
+        <p class="card-subtitle">Project: ${project.name || 'Untitled'}</p>
+      </div>
+      
+      <div class="card-body" style="max-width: 900px;">
+        
+        <!-- Metadata Section -->
+        <div class="section">
+          <h3>Document Information</h3>
+          <div class="grid grid-2" style="gap: 16px;">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="bcDate" value="${bc.date}" class="input">
+            </div>
+            <div class="form-group">
+              <label>Subject</label>
+              <input type="text" id="bcSubject" value="${project.name || ''}" class="input" readonly style="background: var(--bg-tertiary);">
+            </div>
+            <div class="form-group">
+              <label>To (Executive/Sponsor)</label>
+              <input type="text" id="bcTo" value="${bc.to}" class="input" placeholder="e.g., Samantha Chen">
+            </div>
+            <div class="form-group">
+              <label>From (Project Team)</label>
+              <input type="text" id="bcFrom" value="${bc.from}" class="input" placeholder="e.g., Project Team">
+            </div>
+          </div>
+        </div>
+        
+        <!-- 1. Summary -->
+        <div class="section">
+          <h3>1. Summary</h3>
+          <textarea id="bcSummary" class="textarea" rows="4" placeholder="Brief overview of the business case...">${bc.summary}</textarea>
+        </div>
+        
+        <!-- 2. Current Issue -->
+        <div class="section">
+          <h3>2. Current Issue</h3>
+          <textarea id="bcCurrentIssue" class="textarea" rows="4" placeholder="Describe the current problem or opportunity...">${bc.currentIssue}</textarea>
+        </div>
+        
+        <!-- 3. Solution Approach -->
+        <div class="section">
+          <h3>3. Solution Approach</h3>
+          <textarea id="bcSolutionSummary" class="textarea" rows="2" placeholder="Solution summary...">${bc.solutionSummary}</textarea>
+          
+          <div style="margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h4 style="margin: 0;">Solution Options</h4>
+              <button class="btn btn-sm" id="addSolution">+ Add Solution</button>
+            </div>
+            
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: var(--bg-tertiary);">
+                    <th style="padding: 10px; text-align: left; border: 1px solid var(--border-color); width: 40px;">#</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid var(--border-color);">Solution Option</th>
+                    <th style="padding: 10px; text-align: left; border: 1px solid var(--border-color); width: 100px;">R/D/O</th>
+                    <th style="padding: 10px; text-align: center; border: 1px solid var(--border-color); width: 60px;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="solutionsTableBody">
+                  ${bc.solutions.map((sol, idx) => `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid var(--border-color);">${sol.id}</td>
+                      <td style="padding: 8px; border: 1px solid var(--border-color);">
+                        <input type="text" class="input" value="${sol.option}" data-idx="${idx}" data-field="option" style="width: 100%;" placeholder="Describe the solution option...">
+                      </td>
+                      <td style="padding: 8px; border: 1px solid var(--border-color);">
+                        <select class="input" data-idx="${idx}" data-field="priority">
+                          <option value="R" ${sol.priority === 'R' ? 'selected' : ''}>R - Required</option>
+                          <option value="D" ${sol.priority === 'D' ? 'selected' : ''}>D - Desired</option>
+                          <option value="O" ${sol.priority === 'O' ? 'selected' : ''}>O - Optional</option>
+                        </select>
+                      </td>
+                      <td style="padding: 8px; border: 1px solid var(--border-color); text-align: center;">
+                        <button class="btn-icon" data-delete="${idx}" title="Delete">🗑️</button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 4. Recommendations -->
+        <div class="section">
+          <h3>4. Recommendations</h3>
+          <div id="recommendationsList">
+            ${bc.recommendations.map((rec, idx) => `
+              <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;">
+                <span style="color: var(--text-muted); margin-top: 8px;">−</span>
+                <input type="text" class="input" value="${rec}" data-rec-idx="${idx}" style="flex: 1;">
+                <button class="btn-icon" data-delete-rec="${idx}" title="Delete">🗑️</button>
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn btn-sm" id="addRecommendation" style="margin-top: 8px;">+ Add Recommendation</button>
+        </div>
+        
+        <!-- Actions -->
+        <div style="display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+          <button class="btn btn-primary" id="generateBusinessCasePDF">📄 Generate PDF</button>
+          <button class="btn" id="saveBusinessCase">💾 Save Changes</button>
+          <button class="btn" onclick="state.route='library'; render();">← Back to Library</button>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+function wireBusinessCasePage() {
+  const project = getActiveProject();
+  if (!project || !project.businessCase) return;
+  
+  const bc = project.businessCase;
+  
+  // Save metadata changes
+  ['bcDate', 'bcTo', 'bcFrom', 'bcSummary', 'bcCurrentIssue', 'bcSolutionSummary'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', (e) => {
+      const field = id.replace('bc', '').charAt(0).toLowerCase() + id.replace('bc', '').slice(1);
+      bc[field] = e.target.value;
+      saveProjects();
+    });
+  });
+  
+  // Save solution changes
+  document.querySelectorAll('#solutionsTableBody input, #solutionsTableBody select').forEach(el => {
+    el.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      const field = e.target.dataset.field;
+      bc.solutions[idx][field] = e.target.value;
+      saveProjects();
+    });
+  });
+  
+  // Delete solution
+  document.querySelectorAll('[data-delete]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.delete);
+      bc.solutions.splice(idx, 1);
+      // Renumber
+      bc.solutions.forEach((sol, i) => sol.id = i + 1);
+      saveProjects();
+      render();
+    });
+  });
+  
+  // Add solution
+  document.getElementById('addSolution')?.addEventListener('click', () => {
+    bc.solutions.push({
+      id: bc.solutions.length + 1,
+      option: 'New Solution Option',
+      priority: 'D'
+    });
+    saveProjects();
+    render();
+  });
+  
+  // Save recommendation changes
+  document.querySelectorAll('[data-rec-idx]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.recIdx);
+      bc.recommendations[idx] = e.target.value;
+      saveProjects();
+    });
+  });
+  
+  // Delete recommendation
+  document.querySelectorAll('[data-delete-rec]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.deleteRec);
+      bc.recommendations.splice(idx, 1);
+      saveProjects();
+      render();
+    });
+  });
+  
+  // Add recommendation
+  document.getElementById('addRecommendation')?.addEventListener('click', () => {
+    bc.recommendations.push('New recommendation...');
+    saveProjects();
+    render();
+  });
+  
+  // Save button
+  document.getElementById('saveBusinessCase')?.addEventListener('click', () => {
+    toast('Business Case saved!');
+  });
+  
+  // Generate PDF
+  document.getElementById('generateBusinessCasePDF')?.addEventListener('click', () => {
+    generateBusinessCasePDF();
+  });
+}
+
+/* ============================================
+   BUSINESS MODEL CANVAS
+   ============================================ */
+function viewBusinessModelCanvas() {
+  const project = getActiveProject();
+  if (!project) {
+    return `
+      <div class="card">
+        <div class="card-body">
+          <p>Please create or select a project first to build a business model canvas.</p>
+          <button class="btn btn-primary" onclick="state.route='projects'; render();">Go to Projects</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Initialize BMC data if not exists
+  if (!project.businessModelCanvas) {
+    project.businessModelCanvas = {
+      businessName: project.name || '',
+      preparedBy: '',
+      keyPartners: '',
+      keyActivities: '',
+      keyResources: '',
+      valuePropositions: '',
+      customerRelationships: '',
+      channels: '',
+      customerSegments: '',
+      costStructure: '',
+      revenueStreams: ''
+    };
+    saveProjects();
+  }
+  
+  const bmc = project.businessModelCanvas;
+  
+  return `
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">🎨 Business Model Canvas</h2>
+        <p class="card-subtitle">Project: ${project.name || 'Untitled'}</p>
+      </div>
+      
+      <div class="card-body">
+        
+        <!-- Header Info -->
+        <div class="grid grid-2" style="gap: 16px; margin-bottom: 24px;">
+          <div class="form-group">
+            <label>Business Name</label>
+            <input type="text" id="bmcBusinessName" value="${bmc.businessName}" class="input">
+          </div>
+          <div class="form-group">
+            <label>Prepared By</label>
+            <input type="text" id="bmcPreparedBy" value="${bmc.preparedBy}" class="input" placeholder="Your Name">
+          </div>
+        </div>
+        
+        <!-- Canvas Grid -->
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(2, auto); gap: 2px; background: var(--border-color); border: 2px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+          
+          <!-- Row 1 -->
+          <div style="background: var(--surface); padding: 16px; grid-row: span 2;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <div style="width: 24px; height: 24px; background: #FDB44B; border-radius: 50%;"></div>
+              <h4 style="margin: 0; font-size: 14px;">Key Partners</h4>
+            </div>
+            <textarea id="bmcKeyPartners" class="textarea" rows="10" placeholder="▶ Which key resources do we acquire from partners?
+▶ Which key activities do our partners perform?
+▶ Who are our most important partners?">${bmc.keyPartners}</textarea>
+          </div>
+          
+          <div style="background: var(--surface); padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <div style="width: 24px; height: 24px; background: #FDB44B; border-radius: 50%;"></div>
+              <h4 style="margin: 0; font-size: 14px;">Key Activities</h4>
+            </div>
+            <textarea id="bmcKeyActivities" class="textarea" rows="8" placeholder="▶ What are the activities we perform every day to create and deliver value to our customer?">${bmc.keyActivities}</textarea>
+          </div>
+          
+          <div style="background: var(--surface); padding: 16px; grid-row: span 2;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <div style="width: 24px; height: 24px; background: #FDB44B; border-radius: 50%;"></div>
+              <h4 style="margin: 0; font-size: 14px;">Value Propositions</h4>
+            </div>
+            <textarea id="bmcValuePropositions" class="textarea" rows="10" placeholder="▶ What is the value we deliver to our customer?
+▶ What customer problems are we solving?
+▶ What is the customer need we are addressing?
+▶ What is our promise to our customer?
+▶ What are the products and services">${bmc.valuePropositions}</textarea>
+          </div>
+          
+          <div style="background: var(--surface); padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <div style="width: 24px; height: 24px; background: #FDB44B; border-radius: 50%;"></div>
+              <h4 style="margin: 0; font-size: 14px;">Customer Relationships</h4>
+            </div>
+            <textarea id="bmcCustomerRelationships" class="textarea" rows="8" placeholder="▶ What relationship does each customer segment expect us to maintain?">${bmc.customerRelationships}</textarea>
+          </div>
+          
+          <div style="background: var(--surface); padding: 16px; grid-row: span 2;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <div style="width: 24px; height: 24px; background: #FDB44B; border-radius: 50%;"></div>
+              <h4 style="margin: 0; font-size: 14px;">Customer Segments</h4>
+            </div>
+            <textarea id="bmcCustomerSegments" class="textarea" rows="10" placeholder="▶ For whom are we creating value?
+▶ What are the customer segments or groups who pay for or receive our product or service?">${bmc.customerSegments}</textarea>
+          </div>
+          
+          <!-- Row 2 -->
+          <div style="background: var(--surface); padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <div style="width: 24px; height: 24px; background: #FDB44B; border-radius: 50%;"></div>
+              <h4 style="margin: 0; font-size: 14px;">Key Resources</h4>
+            </div>
+            <textarea id="bmcKeyResources" class="textarea" rows="8" placeholder="▶ What are the resources we need to create & deliver our value proposition?">${bmc.keyResources}</textarea>
+          </div>
+          
+          <div style="background: var(--surface); padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <div style="width: 24px; height: 24px; background: #FDB44B; border-radius: 50%;"></div>
+              <h4 style="margin: 0; font-size: 14px;">Channels</h4>
+            </div>
+            <textarea id="bmcChannels" class="textarea" rows="8" placeholder="▶ How does our value proposition reach our customer? Where can our customer buy or use our products or services?">${bmc.channels}</textarea>
+          </div>
+          
+        </div>
+        
+        <!-- Bottom Row -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--border-color); border: 2px solid var(--border-color); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden;">
+          <div style="background: var(--surface); padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <div style="width: 24px; height: 24px; background: #FDB44B; border-radius: 50%;"></div>
+              <h4 style="margin: 0; font-size: 14px;">Cost Structure</h4>
+            </div>
+            <textarea id="bmcCostStructure" class="textarea" rows="4" placeholder="▶ What are the costs of creating and delivering value to the customer?">${bmc.costStructure}</textarea>
+          </div>
+          <div style="background: var(--surface); padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <div style="width: 24px; height: 24px; background: #FDB44B; border-radius: 50%;"></div>
+              <h4 style="margin: 0; font-size: 14px;">Revenue Streams</h4>
+            </div>
+            <textarea id="bmcRevenueStreams" class="textarea" rows="4" placeholder="▶ How do customers pay or reward us for the value we bring them?
+▶ What are the different revenue models?">${bmc.revenueStreams}</textarea>
+          </div>
+        </div>
+        
+        <!-- Actions -->
+        <div style="display: flex; gap: 12px; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+          <button class="btn btn-primary" id="exportBMCPDF">📄 Export as PDF</button>
+          <button class="btn" id="saveBMC">💾 Save Changes</button>
+          <button class="btn" onclick="state.route='library'; render();">← Back to Library</button>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+function wireBusinessModelCanvasPage() {
+  const project = getActiveProject();
+  if (!project || !project.businessModelCanvas) return;
+  
+  const bmc = project.businessModelCanvas;
+  
+  // Wire all inputs
+  const fields = [
+    'bmcBusinessName', 'bmcPreparedBy', 'bmcKeyPartners', 'bmcKeyActivities',
+    'bmcKeyResources', 'bmcValuePropositions', 'bmcCustomerRelationships',
+    'bmcChannels', 'bmcCustomerSegments', 'bmcCostStructure', 'bmcRevenueStreams'
+  ];
+  
+  fields.forEach(id => {
+    document.getElementById(id)?.addEventListener('change', (e) => {
+      const field = id.replace('bmc', '').charAt(0).toLowerCase() + id.replace('bmc', '').slice(1);
+      bmc[field] = e.target.value;
+      saveProjects();
+    });
+  });
+  
+  // Save button
+  document.getElementById('saveBMC')?.addEventListener('click', () => {
+    toast('Business Model Canvas saved!');
+  });
+  
+  // Export PDF button
+  document.getElementById('exportBMCPDF')?.addEventListener('click', () => {
+    toast('PDF export coming soon!');
+  });
 }
 
 /* ============================================
@@ -4961,6 +7552,9 @@ function initializeTheme() {
 initializeTheme();
 render();
 </script>
+
+<!-- PDF Library -->
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 
 </body>
 </html>
